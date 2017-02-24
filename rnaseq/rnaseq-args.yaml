@@ -1,0 +1,9 @@
+resources:
+  zones:
+  - us-*
+inputs:
+  sample_name: |
+    PANTMV_S76
+    PANTZX_S25
+
+  agg_small_disk: 200
