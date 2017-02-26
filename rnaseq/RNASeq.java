@@ -40,9 +40,12 @@ public class RNASeq implements WorkflowDefn {
         "set -o pipefail\n" +
 	"TrimmomaticPE -threads 16 $leftmate $rightmate $leftmateP $leftmateU $rightmateP $rightmateU ILLUMINACLIP:/usr/share/trimmomatic/TruSeq2-PE.fa:2:30:10 LEADING:3 TRAILING:3 SLIDINGWINDOW:4:20 MINLEN:36 >&${logfile}"
        )
-      .input("pipelinerun", "${workflow.index}").gatherBy("pipelinerun")
       .build();
 
+    static Task TrimGather = TaskBuilder.fromTask(Trimmomatic, "TrimGather")
+        .input("pipelinerun", "${workflow.index}").gatherBy("pipelinerun")
+        .build();
+	
   static WorkflowArgs workflowArgs = ArgsBuilder.of()
       .input("Trimmomatic.sample_name", "${sample_name}")
       .build();
@@ -52,8 +55,12 @@ public class RNASeq implements WorkflowDefn {
     return TaskBuilder.named(RNASeq.class.getSimpleName())
         .steps(
             Steps.of(
-			Trimmomatic
-		))
+                Trimmomatic,
+                Branch.of(
+			        TrimGather
+                )
+		    )
+        )
         .args(workflowArgs).build();
   }
 }
