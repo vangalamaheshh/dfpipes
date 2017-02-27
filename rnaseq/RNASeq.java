@@ -24,8 +24,8 @@ public class RNASeq implements WorkflowDefn {
 
   static Task Trimmomatic = TaskBuilder.named("Trimmomatic")
       .input("sample_name").scatterBy("sample_name")
-      .inputFile("leftmate", "gs://testdf/input/${sample_name}_L001_R1_001.fastq.gz")
-      .inputFile("rightmate", "gs://testdf/input/${sample_name}_L001_R2_001.fastq.gz")
+      .inputFile("leftmate", "gs://testdf/input/rnaseq/${sample_name}_R1.fastq.gz")
+      .inputFile("rightmate", "gs://testdf/input/rnaseq/${sample_name}_R2.fastq.gz")
       .outputFile("leftmateP", "${sample_name}.left.paired.trim.fastq.gz")
       .outputFile("leftmateU", "${sample_name}.left.unpaired.trim.fastq.gz")
       .outputFile("rightmateP", "${sample_name}.right.paired.trim.fastq.gz")
@@ -42,9 +42,19 @@ public class RNASeq implements WorkflowDefn {
        )
       .build();
 
-    static Task TrimGather = TaskBuilder.fromTask(Trimmomatic, "TrimGather")
-        .input("pipelinerun", "${workflow.index}").gatherBy("pipelinerun")
-        .build();
+  static Task TrimGather = TaskBuilder.named("TrimGather")
+      .script("#do nothing")
+      .input("pipelinerun", "${workflow.index}").gatherBy("pipelinerun")
+      .build();
+
+  static Task STAR = TaskBuilder.named("STAR")
+      .script("#do nothing")
+      .build();
+
+  static Task STARGather = TaskBuilder.named("STARGather")
+      .script("#do nothing")
+      .input("pipelinerun", "${workflow.index}").gatherBy("pipelinerun")
+      .build();
 	
   static WorkflowArgs workflowArgs = ArgsBuilder.of()
       .input("Trimmomatic.sample_name", "${sample_name}")
@@ -53,14 +63,18 @@ public class RNASeq implements WorkflowDefn {
   @Override
   public Workflow createWorkflow(String[] args) throws IOException {
     return TaskBuilder.named(RNASeq.class.getSimpleName())
-        .steps(
+      .steps(
+        Steps.of(
+          Trimmomatic,
+          Branch.of(
+            TrimGather,
             Steps.of(
-                Trimmomatic,
-                Branch.of(
-			        TrimGather
-                )
-		    )
+              STAR,
+              STARGather
+            )
+          )
         )
-        .args(workflowArgs).build();
+      )
+      .args(workflowArgs).build();
   }
 }

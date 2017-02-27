@@ -3,7 +3,11 @@ resources:
   - us-*
 inputs:
   sample_name: |
-    PANTMV_S76
-    PANTZX_S25
+    LACZ1
+    LACZ2
+    LACZ3
+    M51
+    M52
+    M53
 
   agg_small_disk: 200
