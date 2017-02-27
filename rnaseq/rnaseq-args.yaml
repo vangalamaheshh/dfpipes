@@ -10,4 +10,24 @@ inputs:
     M52
     M53
 
-  agg_small_disk: 200
+  agg_sm_disk: 200
+  agg_md_disk: 300
+  agg_lg_disk: 400
+  
+  #STAR ref files
+  chr_len: gs://ref_files/human/ucsc/hg19/STARIndex/chrLength.txt
+  chr_name: gs://ref_files/human/ucsc/hg19/STARIndex/chrName.txt
+  chr_name_len: gs://ref_files/human/ucsc/hg19/STARIndex/chrNameLength.txt
+  chr_start: gs://ref_files/human/ucsc/hg19/STARIndex/chrStart.txt
+  exon_gene_info: gs://ref_files/human/ucsc/hg19/STARIndex/exonGeTrInfo.tab
+  exon_info: gs://ref_files/human/ucsc/hg19/STARIndex/exonInfo.tab
+  gene_info: gs://ref_files/human/ucsc/hg19/STARIndex/geneInfo.tab
+  genome_info: gs://ref_files/human/ucsc/hg19/STARIndex/Genome
+  genome_params: gs://ref_files/human/ucsc/hg19/STARIndex/genomeParameters.txt
+  sa_info: gs://ref_files/human/ucsc/hg19/STARIndex/SA
+  sa_index: gs://ref_files/human/ucsc/hg19/STARIndex/SAindex
+  sjdb_info: gs://ref_files/human/ucsc/hg19/STARIndex/sjdbInfo.txt
+  sjdb_gtf: gs://ref_files/human/ucsc/hg19/STARIndex/sjdbList.fromGTF.out.tab
+  sjdb_list: gs://ref_files/human/ucsc/hg19/STARIndex/sjdbList.out.tab
+  trans_info: gs://ref_files/human/ucsc/hg19/STARIndex/transcriptInfo.tab
+  #End
