@@ -21,6 +21,7 @@ import com.google.cloud.genomics.dockerflow.workflow.WorkflowDefn;
 
 public class RNASeq implements WorkflowDefn {
   static final String TRIM_IMAGE = "docker.io/mvangala/bioifx_preprocess_trimmomatic:0.0.1";
+  static final String STAR_IMAGE = "docker.io/mvangala/bioifx_alignment_star:0.0.1";
 
   static Task Trimmomatic = TaskBuilder.named("Trimmomatic")
       .input("sample_name").scatterBy("sample_name")
@@ -32,7 +33,7 @@ public class RNASeq implements WorkflowDefn {
       .outputFile("rightmateU", "${sample_name}.right.unpaired.trim.fastq.gz")
       .outputFile("logfile", "${sample_name}.trim.log")
       .preemptible(true)
-      .diskSize("${agg_small_disk}")
+      .diskSize("${agg_sm_disk}")
       .memory(4)
       .cpu(16)
       .docker(TRIM_IMAGE)
@@ -48,7 +49,56 @@ public class RNASeq implements WorkflowDefn {
       .build();
 
   static Task STAR = TaskBuilder.named("STAR")
-      .script("#do nothing")
+      .input("sample_name")
+      .input("genome_dir", "/mnt/data/")
+      .inputFile("leftmate", "${Trimmomatic.leftmateP}")
+      .inputFile("rightmate", "${Trimmomatic.rightmateP}")
+      //STAR reference files
+      .inputFile("chr_len", "${chr_len}")
+      .inputFile("chr_name", "${chr_name}")
+      .inputFile("chr_name_len", "${chr_name_len}")
+      .inputFile("chr_start", "${chr_start}")
+      .inputFile("exon_gene_info", "${exon_gene_info}")
+      .inputFile("exon_info", "${exon_info}")
+      .inputFile("gene_info", "${gene_info}")
+      .inputFile("genome_info", "${genome_info}")
+      .inputFile("genome_params", "${genome_params}")
+      .inputFile("sa_info", "${sa_info}")
+      .inputFile("sa_index", "${sa_index}")
+      .inputFile("sjdb_info", "${sjdb_info}")
+      .inputFile("sjdb_gtf", "${sjdb_gtf}")
+      .inputFile("sjdb_list", "${sjdb_list}")
+      .inputFile("trans_info", "${trans_info}")
+      //STAR out files
+      .outputFile("chi_junc", "${sample_name}.${chi_junc}")
+      .outputFile("chi_sam", "${sample_name}.${chi_sam}")
+      .outputFile("gene_counts", "${sample_name}.${gene_counts}")
+      .outputFile("junc_bed", "${sample_name}.${junc_bed}")
+      .outputFile("log_final", "${sample_name}.${log_final}")
+      .outputFile("log_full", "${sample_name}.${log_full}")
+      .outputFile("log_progress", "${sample_name}.${log_progress}")
+      .outputFile("sj_out", "${sample_name}.${sj_out}")
+      .outputFile("sorted_bam", "${sample_name}.${sorted_bam}")
+      //End
+      .preemptible(true)
+      .diskSize("${agg_lg_disk}")
+      .memory(45)
+      .cpu(16)
+      .docker(STAR_IMAGE)
+      .script(
+        "set -o pipefail\n" +
+        "STAR --runMode alignReads --runThreadN 16 --genomeDir $genome_dir \\\n" +
+        " --sjdbGTFfile $gtf_file \\\n" +
+        " --readFilesIn $leftmate $rightmate --readFilesCommand zcat \\\n" + 
+        " --outFileNamePrefix $sample_name. \\\n" +
+        "  --outSAMstrandField intronMotif \\\n" +
+        "  --outSAMmode Full --outSAMattributes All --outSAMattrRGline {params.readgroup} --outSAMtype BAM SortedByCoordinate"
+        "  --limitBAMsortRAM 45000000000 --quantMode GeneCounts"
+        "  --outReadsUnmapped Fastx"
+        "  --outSAMunmapped Within {params.keepPairs}"
+        " && mv {params.prefix}.Aligned.sortedByCoord.out.bam {output.bam}"
+        " && mv {params.prefix}.ReadsPerGene.out.tab {output.counts}"
+      )
       .build();
 
   static Task STARGather = TaskBuilder.named("STARGather")
@@ -58,6 +108,7 @@ public class RNASeq implements WorkflowDefn {
 	
   static WorkflowArgs workflowArgs = ArgsBuilder.of()
       .input("Trimmomatic.sample_name", "${sample_name}")
+      .input("STAR.sample_name", "${Trimmomatic.sample_name}")
       .build();
 
   @Override
