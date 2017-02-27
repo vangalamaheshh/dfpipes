@@ -30,4 +30,15 @@ inputs:
   sjdb_gtf: gs://ref_files/human/ucsc/hg19/STARIndex/sjdbList.fromGTF.out.tab
   sjdb_list: gs://ref_files/human/ucsc/hg19/STARIndex/sjdbList.out.tab
   trans_info: gs://ref_files/human/ucsc/hg19/STARIndex/transcriptInfo.tab
+  
+  #STAR out files
+  chi_junc: Chimeric.out.junction
+  chi_sam: Chimeric.out.sam
+  gene_counts: counts.tab
+  junc_bed: junctions.bed
+  log_final: Log.final.out
+  log_full: Log.out
+  log_progress: Log.progress.out
+  sj_out: SJ.out.tab
+  sorted_bam: sorted.bam
   #End
