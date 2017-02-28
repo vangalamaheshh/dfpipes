@@ -79,7 +79,7 @@ public class RNASeq implements WorkflowDefn {
       .outputFile("log_full", "${sample_name}.${log_full}")
       .outputFile("log_progress", "${sample_name}.${log_progress}")
       .outputFile("sj_out", "${sample_name}.${sj_out}")
-      .outputFile("sorted_bam", "${sample_name}.${sorted_bam}")
+      .outputFile("unsorted_bam", "${sample_name}.${unsorted_bam}")
       //End
       .preemptible(true)
       .diskSize("${agg_lg_disk}")
@@ -88,6 +88,7 @@ public class RNASeq implements WorkflowDefn {
       .docker(STAR_IMAGE)
       .script(
         "set -o pipefail\n" +
+        "for cur_file in $(find /mnt/data/ -type f); do file_name=$(basename $cur_file); if [[ $file_name =~ ^[0-9] ]]; then out_file=$(echo $file_name | sed -E \"s/^[0-9]+-//g\"); ln -s /mnt/data/$file_name /mnt/data/$out_file; fi; done" + "\n" +
         "STAR --runMode alignReads --runThreadN 16 --genomeDir $genome_dir \\\n" +
         " --sjdbGTFfile $gtf_file \\\n" +
         " --readFilesIn $leftmate $rightmate --readFilesCommand zcat \\\n" + 
@@ -95,10 +96,17 @@ public class RNASeq implements WorkflowDefn {
         " --outSAMstrandField intronMotif \\\n" +
         " --outSAMmode Full --outSAMattributes All \\\n" +
         " --outSAMattrRGline ID:${sample_name} PL:illumina LB:${sample_name} SM:${sample_name} \\\n" + 
-        " --outSAMtype BAM SortedByCoordinate \\\n" +
-        "  --limitBAMsortRAM 45000000000 --quantMode GeneCounts \\\n" +
-        " && mv ${sample_name}.Aligned.sortedByCoord.out.bam ${sorted_bam} \\\n" +
-        " && mv ${sample_name}.ReadsPerGene.out.tab ${gene_counts}"
+        " --outSAMtype BAM Unsorted \\\n" +
+        " --quantMode GeneCounts \\\n" +
+        " && mv ${sample_name}.Aligned.out.bam ${unsorted_bam} \\\n" +
+        " && mv ${sample_name}.ReadsPerGene.out.tab ${gene_counts} \\\n" +
+        " && mv ${sample_name}.Chimeric.out.junction ${chi_junc} \\\n" +
+        " && mv ${sample_name}.Chimeric.out.sam ${chi_sam} \\\n" +
+        " && mv ${sample_name}.junctions.bed ${junc_bed} \\\n" +
+        " && mv ${sample_name}.Log.final.out ${log_final} \\\n" +
+        " && mv ${sample_name}.Log.out ${log_full} \\\n" +
+        " && mv ${sample_name}.Log.progress.out ${log_progress} \\\n" +
+        " && mv ${sample_name}.SJ.out.tab ${sj_out} \\\n"
       )
       .build();
 
