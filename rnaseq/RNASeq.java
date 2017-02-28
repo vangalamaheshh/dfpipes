@@ -50,7 +50,7 @@ public class RNASeq implements WorkflowDefn {
 
   static Task STAR = TaskBuilder.named("STAR")
       .input("sample_name")
-      .input("genome_dir", "/mnt/data/")
+      .input("genome_dir", "/mnt/data")
       .inputFile("leftmate", "${Trimmomatic.leftmateP}")
       .inputFile("rightmate", "${Trimmomatic.rightmateP}")
       //STAR reference files
