@@ -69,6 +69,7 @@ public class RNASeq implements WorkflowDefn {
       .inputFile("sjdb_gtf", "${sjdb_gtf}")
       .inputFile("sjdb_list", "${sjdb_list}")
       .inputFile("trans_info", "${trans_info}")
+      .inputFile("gtf_file", "${gtf_file}")
       //STAR out files
       .outputFile("chi_junc", "${sample_name}.${chi_junc}")
       .outputFile("chi_sam", "${sample_name}.${chi_sam}")
@@ -91,13 +92,13 @@ public class RNASeq implements WorkflowDefn {
         " --sjdbGTFfile $gtf_file \\\n" +
         " --readFilesIn $leftmate $rightmate --readFilesCommand zcat \\\n" + 
         " --outFileNamePrefix $sample_name. \\\n" +
-        "  --outSAMstrandField intronMotif \\\n" +
-        "  --outSAMmode Full --outSAMattributes All --outSAMattrRGline {params.readgroup} --outSAMtype BAM SortedByCoordinate"
-        "  --limitBAMsortRAM 45000000000 --quantMode GeneCounts"
-        "  --outReadsUnmapped Fastx"
-        "  --outSAMunmapped Within {params.keepPairs}"
-        " && mv {params.prefix}.Aligned.sortedByCoord.out.bam {output.bam}"
-        " && mv {params.prefix}.ReadsPerGene.out.tab {output.counts}"
+        " --outSAMstrandField intronMotif \\\n" +
+        " --outSAMmode Full --outSAMattributes All \\\n" +
+        " --outSAMattrRGline ID:${sample_name} PL:illumina LB:${sample_name} SM:${sample_name} \\\n" + 
+        " --outSAMtype BAM SortedByCoordinate \\\n" +
+        "  --limitBAMsortRAM 45000000000 --quantMode GeneCounts \\\n" +
+        " && mv ${sample_name}.Aligned.sortedByCoord.out.bam ${sorted_bam} \\\n" +
+        " && mv ${sample_name}.ReadsPerGene.out.tab ${gene_counts}"
       )
       .build();
 

@@ -30,6 +30,7 @@ inputs:
   sjdb_gtf: gs://ref_files/human/ucsc/hg19/STARIndex/sjdbList.fromGTF.out.tab
   sjdb_list: gs://ref_files/human/ucsc/hg19/STARIndex/sjdbList.out.tab
   trans_info: gs://ref_files/human/ucsc/hg19/STARIndex/transcriptInfo.tab
+  gtf_file: gs://ref_files/human/ucsc/hg19/genes.gtf
   
   #STAR out files
   chi_junc: Chimeric.out.junction
