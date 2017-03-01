@@ -35,11 +35,11 @@ public class RNASeq implements WorkflowDefn {
       .preemptible(true)
       .diskSize("${agg_sm_disk}")
       .memory(4)
-      .cpu(16)
+      .cpu(8)
       .docker(TRIM_IMAGE)
       .script(
         "set -o pipefail\n" +
-	"TrimmomaticPE -threads 16 $leftmate $rightmate $leftmateP $leftmateU $rightmateP $rightmateU ILLUMINACLIP:/usr/share/trimmomatic/TruSeq2-PE.fa:2:30:10 LEADING:3 TRAILING:3 SLIDINGWINDOW:4:20 MINLEN:36 >&${logfile}"
+	"TrimmomaticPE -threads 8 $leftmate $rightmate $leftmateP $leftmateU $rightmateP $rightmateU ILLUMINACLIP:/usr/share/trimmomatic/TruSeq2-PE.fa:2:30:10 LEADING:3 TRAILING:3 SLIDINGWINDOW:4:20 MINLEN:36 >&${logfile}"
        )
       .build();
 
@@ -79,11 +79,11 @@ public class RNASeq implements WorkflowDefn {
       .outputFile("log_full", "${sample_name}.${log_full}")
       .outputFile("log_progress", "${sample_name}.${log_progress}")
       .outputFile("sj_out", "${sample_name}.${sj_out}")
-      .outputFile("unsorted_bam", "${sample_name}.${unsorted_bam}")
+      .outputFile("sorted_bam", "${sample_name}.${sorted_bam}")
       //End
       .preemptible(true)
       .diskSize("${agg_lg_disk}")
-      .memory(45)
+      .memory(60)
       .cpu(16)
       .docker(STAR_IMAGE)
       .script(
@@ -96,9 +96,9 @@ public class RNASeq implements WorkflowDefn {
         " --outSAMstrandField intronMotif \\\n" +
         " --outSAMmode Full --outSAMattributes All \\\n" +
         " --outSAMattrRGline ID:${sample_name} PL:illumina LB:${sample_name} SM:${sample_name} \\\n" + 
-        " --outSAMtype BAM Unsorted \\\n" +
-        " --quantMode GeneCounts \\\n" +
-        " && mv ${sample_name}.Aligned.out.bam ${unsorted_bam} \\\n" +
+        " --outSAMtype BAM SortedByCoordinate \\\n" +
+        " --limitBAMsortRAM 55000000000 --quantMode GeneCounts --outTmpDir /mnt/data/temp \\\n" +
+        " && mv ${sample_name}.Aligned.sortedByCoord.out.bam ${sorted_bam} \\\n" +
         " && mv ${sample_name}.ReadsPerGene.out.tab ${gene_counts} \\\n" +
         //" && mv ${sample_name}.Chimeric.out.junction ${chi_junc} \\\n" +
         //" && mv ${sample_name}.Chimeric.out.sam ${chi_sam} \\\n" +

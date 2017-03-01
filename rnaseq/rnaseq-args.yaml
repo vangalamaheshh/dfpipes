@@ -4,11 +4,11 @@ resources:
 inputs:
   sample_name: |
     LACZ1
-#    LACZ2
-#    LACZ3
-#    M51
-#    M52
-#    M53
+    LACZ2
+    LACZ3
+    M51
+    M52
+    M53
 
   agg_sm_disk: 200
   agg_md_disk: 300
@@ -41,5 +41,5 @@ inputs:
   log_full: Log.out
   log_progress: Log.progress.out
   sj_out: SJ.out.tab
-  unsorted_bam: unsorted.bam
+  sorted_bam: sorted.bam
   #End
