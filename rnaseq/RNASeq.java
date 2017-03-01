@@ -71,10 +71,10 @@ public class RNASeq implements WorkflowDefn {
       .inputFile("trans_info", "${trans_info}")
       .inputFile("gtf_file", "${gtf_file}")
       //STAR out files
-      .outputFile("chi_junc", "${sample_name}.${chi_junc}")
-      .outputFile("chi_sam", "${sample_name}.${chi_sam}")
+      //.outputFile("chi_junc", "${sample_name}.${chi_junc}")
+      //.outputFile("chi_sam", "${sample_name}.${chi_sam}")
       .outputFile("gene_counts", "${sample_name}.${gene_counts}")
-      .outputFile("junc_bed", "${sample_name}.${junc_bed}")
+      //.outputFile("junc_bed", "${sample_name}.${junc_bed}")
       .outputFile("log_final", "${sample_name}.${log_final}")
       .outputFile("log_full", "${sample_name}.${log_full}")
       .outputFile("log_progress", "${sample_name}.${log_progress}")
@@ -100,9 +100,9 @@ public class RNASeq implements WorkflowDefn {
         " --quantMode GeneCounts \\\n" +
         " && mv ${sample_name}.Aligned.out.bam ${unsorted_bam} \\\n" +
         " && mv ${sample_name}.ReadsPerGene.out.tab ${gene_counts} \\\n" +
-        " && mv ${sample_name}.Chimeric.out.junction ${chi_junc} \\\n" +
-        " && mv ${sample_name}.Chimeric.out.sam ${chi_sam} \\\n" +
-        " && mv ${sample_name}.junctions.bed ${junc_bed} \\\n" +
+        //" && mv ${sample_name}.Chimeric.out.junction ${chi_junc} \\\n" +
+        //" && mv ${sample_name}.Chimeric.out.sam ${chi_sam} \\\n" +
+        //" && mv ${sample_name}.junctions.bed ${junc_bed} \\\n" +
         " && mv ${sample_name}.Log.final.out ${log_final} \\\n" +
         " && mv ${sample_name}.Log.out ${log_full} \\\n" +
         " && mv ${sample_name}.Log.progress.out ${log_progress} \\\n" +

@@ -33,10 +33,10 @@ inputs:
   gtf_file: gs://ref_files/human/ucsc/hg19/genes.gtf
   
   #STAR out files
-  chi_junc: Chimeric.out.junction
-  chi_sam: Chimeric.out.sam
+  #chi_junc: Chimeric.out.junction //only created when star-fusion is required
+  #chi_sam: Chimeric.out.sam       // by giving fusion specific params
   gene_counts: counts.tab
-  junc_bed: junctions.bed
+  #junc_bed: junctions.bed
   log_final: Log.final.out
   log_full: Log.out
   log_progress: Log.progress.out
