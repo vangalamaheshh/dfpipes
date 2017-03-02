@@ -22,7 +22,7 @@ import com.google.cloud.genomics.dockerflow.workflow.WorkflowDefn;
 public class RNASeq implements WorkflowDefn {
   static final String TRIM_IMAGE = "docker.io/mvangala/bioifx_preprocess_trimmomatic:0.0.1";
   static final String STAR_IMAGE = "docker.io/mvangala/bioifx_alignment_star:0.0.1";
-
+  static final String TRIM_REPORT_IMAGE = "docker.io/mvangala/bioifx_preprocess_trimmomatic-plots:0.0.1";
   static Task Trimmomatic = TaskBuilder.named("Trimmomatic")
       .input("sample_name").scatterBy("sample_name")
       .inputFile("leftmate", "gs://testdf/input/rnaseq/${sample_name}_R1.fastq.gz")
@@ -46,6 +46,24 @@ public class RNASeq implements WorkflowDefn {
   static Task TrimGather = TaskBuilder.named("TrimGather")
       .script("#do nothing")
       .input("pipelinerun", "${workflow.index}").gatherBy("pipelinerun")
+      .build();
+  
+  static Task TrimReport = TaskBuilder.named("TrimReport")
+      .inputFileArray("logfiles", " -l ", "${Trimmomatic.logfile}")
+      .outputFile("trim_matrix", "trim_report.csv")
+      .outputFile("trim_plot", "trim_report.png")
+      .docker(TRIM_REPORT_IMAGE)
+      .script(
+        "set -euo pipefail\n" +
+        "logfiles=\"-l ${logfiles} \"\n" +
+        "matrix_command=\"perl /usr/local/bin/scripts/trim_report_pe.pl ${logfiles} 1> ${trim_matrix} \"\n" +
+        "png_command=\"Rscript /usr/local/bin/scripts/trim_plot_pe.R ${trim_matrix} ${trim_plot} \"\n" +
+        "echo \"Matrix Command: ${matrix_command} \"\n" +
+        "echo \"PNG Command: ${png_command} \"\n" +
+        "echo \"Log files: ${logfiles} \"\n" +
+        " ${matrix_command} \n" +
+        " ${png_command} "
+       )
       .build();
 
   static Task STAR = TaskBuilder.named("STAR")
@@ -127,7 +145,10 @@ public class RNASeq implements WorkflowDefn {
         Steps.of(
           Trimmomatic,
           Branch.of(
-            TrimGather,
+            Steps.of(
+              TrimGather,
+              TrimReport
+            ),
             Steps.of(
               STAR,
               STARGather
