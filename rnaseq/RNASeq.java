@@ -154,11 +154,10 @@ public class RNASeq implements WorkflowDefn {
 
   static Task Cufflinks = TaskBuilder.named("Cufflinks")
       .input("sample_name")
-      .input("iso_fpkm")
       .inputFile("sorted_bam", "${STAR.sorted_bam}")
       .inputFile("gtf_file", "${gtf_file}")
-      .outputFile("genes_fpkm", "${Cufflinks.sample_name}.genes.fpkm_tracking")
-      .outputFile("iso_fpkm", "${Cufflinks.sample_name}.isoforms.fpkm_tracking")
+      .outputFile("genes_fpkm", "${sample_name}.genes.fpkm_tracking")
+      .outputFile("iso_fpkm", "${sample_name}.isoforms.fpkm_tracking")
       .cpu(16)
       .memory(60)
       .diskSize("${agg_sm_disk}")
@@ -208,13 +207,13 @@ public class RNASeq implements WorkflowDefn {
             STAR,
               Branch.of(
                 Steps.of(
-                  STARGather,
-                  STARReport
-                ), 
-                Steps.of(
                   Cufflinks,
                   CuffGather,
                   CuffMatrix
+                ),
+                Steps.of(
+                  STARGather,
+                  STARReport
                 )
               )
             )
