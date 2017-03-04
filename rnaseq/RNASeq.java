@@ -23,6 +23,10 @@ public class RNASeq implements WorkflowDefn {
   static final String TRIM_IMAGE = "docker.io/mvangala/bioifx_preprocess_trimmomatic:0.0.1";
   static final String STAR_IMAGE = "docker.io/mvangala/bioifx_alignment_star:0.0.1";
   static final String TRIM_REPORT_IMAGE = "docker.io/mvangala/bioifx_preprocess_trimmomatic-plots:0.0.1";
+  static final String STAR_REPORT_IMAGE = "docker.io/mvangala/bioifx_alignment_star-plots:0.0.1";
+  static final String CUFF_IMAGE = "docker.io/mvangala/bioifx_alignment_cufflinks:0.0.1";
+  static final String CUFF_MATRIX_IMAGE = STAR_REPORT_IMAGE; 
+
   static Task Trimmomatic = TaskBuilder.named("Trimmomatic")
       .input("sample_name").scatterBy("sample_name")
       .inputFile("leftmate", "gs://testdf/input/rnaseq/${sample_name}_R1.fastq.gz")
@@ -132,7 +136,56 @@ public class RNASeq implements WorkflowDefn {
       .script("#do nothing")
       .input("pipelinerun", "${workflow.index}").gatherBy("pipelinerun")
       .build();
-	
+
+  static Task STARReport = TaskBuilder.named("STARReport")
+      .inputFileArray("gene_counts_list", " -f ", "${STAR.gene_counts}")
+      .inputFileArray("log_list", " -l ", "${STAR.log_final}")
+      .outputFile("log_csv", "STAR_Align_Report.csv")
+      .outputFile("log_png", "STAR_Align_Report.png")
+      .outputFile("gene_csv", "STAR_Gene_Counts.csv")
+      .docker(STAR_REPORT_IMAGE)
+      .script(
+        "set -euo pipefail\n" +
+        "perl /usr/local/bin/scripts/STAR_reports.pl -l ${log_list} -o $log_csv \n" +
+        "Rscript /usr/local/bin/scripts/map_stats.R $log_csv $log_png \n" +
+        "perl /usr/local/bin/scripts/raw_and_fpkm_count_matrix.pl -f ${gene_counts_list} -o $gene_csv "
+      )
+      .build();
+
+  static Task Cuff = TaskBuilder.named("Cufflinks")
+      .input("sample_name", "${STAR.sample_name}")
+      .inputFile("sorted_bam", "${STAR.sorted_bam}")
+      .inputFile("gtf_file", "${gtf_file}")
+      .outputFile("genes_fpkm", "${STAR.sample_name}.genes.fpkm_tracking")
+      .outputFile("iso_fpkm", "${STAR.sample_name}.isoforms.fpkm_tracking")
+      .cpu(16)
+      .memory(60)
+      .diskSize("${agg_sm_disk}")
+      .preemptible(true)
+      .docker(CUFF_IMAGE)
+      .script(
+        "set -euo pipefail \n" +
+        "cufflinks -p 16 -G $gtf_file $sorted_bam \n" +
+        "mv genes.fpkm_tracking $genes_fpkm \n" +
+        "mv isoforms.fpkm_tracking $iso_fpkm "
+      )
+      .build();
+
+  static Task CuffGather = TaskBuilder.named("CuffGather")
+      .script("#do nothing")
+      .input("pipelinerun", "${workflow.index}").gatherBy("pipelinerun")
+      .build();
+
+  static Task CuffMatrix = TaskBuilder.named("CuffMatrix")
+      .inputFileArray("gene_fpkm_list", " -f ", "${Cufflinks.genes_fpkm}")
+      .outputFile("cuff_matrix", "Cuff_Gene_Counts.csv")
+      .docker(CUFF_MATRIX_IMAGE)
+      .script(
+        "set -euo pipefail \n" +
+        "perl /usr/local/bin/scripts/raw_and_fpkm_count_matrix.pl -c -d -f ${gene_fpkm_list} -o $cuff_matrix "
+      )
+      .build();
+
   static WorkflowArgs workflowArgs = ArgsBuilder.of()
       .input("Trimmomatic.sample_name", "${sample_name}")
       .input("STAR.sample_name", "${Trimmomatic.sample_name}")
@@ -151,7 +204,17 @@ public class RNASeq implements WorkflowDefn {
             ),
             Steps.of(
               STAR,
-              STARGather
+              Branch.of(
+                Steps.of(
+                  STARGather,
+                  STARReport
+                ), 
+                Steps.of(
+                  Cuff,
+                  CuffGather,
+                  CuffMatrix
+                )
+              )
             )
           )
         )
