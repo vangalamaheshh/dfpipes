@@ -152,12 +152,13 @@ public class RNASeq implements WorkflowDefn {
       )
       .build();
 
-  static Task Cuff = TaskBuilder.named("Cufflinks")
-      .input("sample_name", "${STAR.sample_name}")
+  static Task Cufflinks = TaskBuilder.named("Cufflinks")
+      .input("sample_name")
+      .input("iso_fpkm")
       .inputFile("sorted_bam", "${STAR.sorted_bam}")
       .inputFile("gtf_file", "${gtf_file}")
-      .outputFile("genes_fpkm", "${STAR.sample_name}.genes.fpkm_tracking")
-      .outputFile("iso_fpkm", "${STAR.sample_name}.isoforms.fpkm_tracking")
+      .outputFile("genes_fpkm", "${Cufflinks.sample_name}.genes.fpkm_tracking")
+      .outputFile("iso_fpkm", "${Cufflinks.sample_name}.isoforms.fpkm_tracking")
       .cpu(16)
       .memory(60)
       .diskSize("${agg_sm_disk}")
@@ -189,6 +190,7 @@ public class RNASeq implements WorkflowDefn {
   static WorkflowArgs workflowArgs = ArgsBuilder.of()
       .input("Trimmomatic.sample_name", "${sample_name}")
       .input("STAR.sample_name", "${Trimmomatic.sample_name}")
+      .input("Cufflinks.sample_name", "${Trimmomatic.sample_name}")
       .build();
 
   @Override
@@ -203,14 +205,14 @@ public class RNASeq implements WorkflowDefn {
               TrimReport
             ),
             Steps.of(
-              STAR,
+            STAR,
               Branch.of(
                 Steps.of(
                   STARGather,
                   STARReport
                 ), 
                 Steps.of(
-                  Cuff,
+                  Cufflinks,
                   CuffGather,
                   CuffMatrix
                 )
