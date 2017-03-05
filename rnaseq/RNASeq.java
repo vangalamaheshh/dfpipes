@@ -195,9 +195,7 @@ public class RNASeq implements WorkflowDefn {
       .script(
         "set -euo pipefail \n" +
         "Rscript /usr/local/bin/scripts/filter_cuff_matrix.R \\\n" +
-        "--rpkm_file $in_matrix \\\n" +
-        "--min_samples 2 --RPKM_cutoff 2.0 --filter_miRNA TRUE --numgenes 1000 \\\n" +
-        "--out_file $out_matrix --sample_names ${sample_names} "
+        "$in_matrix \"${sample_names}\" TRUE 1000 2 2.0 $out_matrix "
       )
       .build();
 
