@@ -26,6 +26,7 @@ public class RNASeq implements WorkflowDefn {
   static final String STAR_REPORT_IMAGE = "docker.io/mvangala/bioifx_alignment_star-plots:0.0.1";
   static final String CUFF_IMAGE = "docker.io/mvangala/bioifx_alignment_cufflinks:0.0.1";
   static final String CUFF_MATRIX_IMAGE = STAR_REPORT_IMAGE; 
+  static final String PCA_IMAGE = "docker.io/mvangala/bioifx_cluster_pca:0.0.1";
 
   static Task Trimmomatic = TaskBuilder.named("Trimmomatic")
       .input("sample_name").scatterBy("sample_name")
@@ -186,6 +187,20 @@ public class RNASeq implements WorkflowDefn {
       )
       .build();
 
+  static Task FilterCuff = TaskBuilder.named("FilterCuff")
+      .input("in_matrix", "${CuffMatrix.cuff_matrix}")
+      .inputArray("sample_names", " ", "${sample_name}")
+      .outputFile("out_matrix", "Cuff_Gene_Counts.filtered.csv")
+      .docker(PCA_IMAGE)
+      .script(
+        "set -euo pipefail \n" +
+        "Rscript /usr/local/bin/scripts/filter_cuff_matrix.R \\\n" +
+        "--rpkm_file $in_matrix \\\n" +
+        "--min_samples 2 --RPKM_cutoff 2.0 --filter_miRNA TRUE --numgenes 1000 \\\n" +
+        "--out_file $out_matrix --sample_names ${sample_names} "
+      )
+      .build();
+
   static WorkflowArgs workflowArgs = ArgsBuilder.of()
       .input("Trimmomatic.sample_name", "${sample_name}")
       .input("STAR.sample_name", "${Trimmomatic.sample_name}")
@@ -204,12 +219,13 @@ public class RNASeq implements WorkflowDefn {
               TrimReport
             ),
             Steps.of(
-            STAR,
+              STAR,
               Branch.of(
                 Steps.of(
                   Cufflinks,
                   CuffGather,
-                  CuffMatrix
+                  CuffMatrix,
+                  FilterCuff
                 ),
                 Steps.of(
                   STARGather,
