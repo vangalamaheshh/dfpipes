@@ -188,7 +188,7 @@ public class RNASeq implements WorkflowDefn {
       .build();
 
   static Task FilterCuff = TaskBuilder.named("FilterCuff")
-      .input("in_matrix", "${CuffMatrix.cuff_matrix}")
+      .inputFile("in_matrix", "${CuffMatrix.cuff_matrix}")
       .inputArray("sample_names", " ", "${sample_name}")
       .outputFile("out_matrix", "Cuff_Gene_Counts.filtered.csv")
       .docker(PCA_IMAGE)
