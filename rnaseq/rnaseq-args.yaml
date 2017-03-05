@@ -10,6 +10,15 @@ inputs:
     M52
     M53
 
+  metadata: |
+    SampleName,Individual,Group,comp_LACZ_vs_M
+    LACZ1,LACZ1,LAC,1
+    LACZ2,LACZ2,LAC,1
+    LACZ3,LACZ3,LAC,1
+    M51,M51,M,2
+    M52,M52,M,2
+    M53,M53,M,2
+
   agg_sm_disk: 200
   agg_md_disk: 300
   agg_lg_disk: 400
