@@ -18,6 +18,8 @@ import com.google.cloud.genomics.dockerflow.workflow.Workflow;
 import com.google.cloud.genomics.dockerflow.workflow.Workflow.Branch;
 import com.google.cloud.genomics.dockerflow.workflow.Workflow.Steps;
 import com.google.cloud.genomics.dockerflow.workflow.WorkflowDefn;
+import com.google.cloud.genomics.dockerflow.task.TaskDefn;
+import com.google.cloud.genomics.dockerflow.task.TaskDefn.Param;
 
 public class RNASeq implements WorkflowDefn {
   static final String TRIM_IMAGE = "docker.io/mvangala/bioifx_preprocess_trimmomatic:0.0.1";
@@ -40,11 +42,11 @@ public class RNASeq implements WorkflowDefn {
       .preemptible(true)
       .diskSize("${agg_sm_disk}")
       .memory(4)
-      .cpu(8)
+      .cpu(6)
       .docker(TRIM_IMAGE)
       .script(
         "set -o pipefail\n" +
-	"TrimmomaticPE -threads 8 $leftmate $rightmate $leftmateP $leftmateU $rightmateP $rightmateU ILLUMINACLIP:/usr/share/trimmomatic/TruSeq2-PE.fa:2:30:10 LEADING:3 TRAILING:3 SLIDINGWINDOW:4:20 MINLEN:36 >&${logfile}"
+	"TrimmomaticPE -threads 6 $leftmate $rightmate $leftmateP $leftmateU $rightmateP $rightmateU ILLUMINACLIP:/usr/share/trimmomatic/TruSeq2-PE.fa:2:30:10 LEADING:3 TRAILING:3 SLIDINGWINDOW:4:20 MINLEN:36 >&${logfile}"
        )
       .build();
 
@@ -73,7 +75,6 @@ public class RNASeq implements WorkflowDefn {
 
   static Task STAR = TaskBuilder.named("STAR")
       .input("sample_name")
-      .input("genome_dir", "/mnt/data")
       .inputFile("leftmate", "${Trimmomatic.leftmateP}")
       .inputFile("rightmate", "${Trimmomatic.rightmateP}")
       //STAR reference files
@@ -93,11 +94,7 @@ public class RNASeq implements WorkflowDefn {
       .inputFile("sjdb_list", "${sjdb_list}")
       .inputFile("trans_info", "${trans_info}")
       .inputFile("gtf_file", "${gtf_file}")
-      //STAR out files
-      //.outputFile("chi_junc", "${sample_name}.${chi_junc}")
-      //.outputFile("chi_sam", "${sample_name}.${chi_sam}")
       .outputFile("gene_counts", "${sample_name}.${gene_counts}")
-      //.outputFile("junc_bed", "${sample_name}.${junc_bed}")
       .outputFile("log_final", "${sample_name}.${log_final}")
       .outputFile("log_full", "${sample_name}.${log_full}")
       .outputFile("log_progress", "${sample_name}.${log_progress}")
@@ -106,13 +103,13 @@ public class RNASeq implements WorkflowDefn {
       //End
       .preemptible(true)
       .diskSize("${agg_lg_disk}")
-      .memory(60)
-      .cpu(16)
+      .memory(45)
+      .cpu(6)
       .docker(STAR_IMAGE)
       .script(
         "set -o pipefail\n" +
-        "for cur_file in $(find /mnt/data/ -type f); do file_name=$(basename $cur_file); if [[ $file_name =~ ^[0-9] ]]; then out_file=$(echo $file_name | sed -E \"s/^[0-9]+-//g\"); ln -s /mnt/data/$file_name /mnt/data/$out_file; fi; done" + "\n" +
-        "STAR --runMode alignReads --runThreadN 16 --genomeDir $genome_dir \\\n" +
+        "for cur_file in $(find /mnt/data/ -type f); do file_name=$(basename $cur_file); if [[ $file_name =~ ^[0-9] ]]; then out_file=$(echo $file_name | sed -E \"s/^[0-9]+-//g\"); ln -s $file_name $out_file; fi; done" + "\n" +
+        "STAR --runMode alignReads --runThreadN 6 --genomeDir $PWD \\\n" +
         " --sjdbGTFfile $gtf_file \\\n" +
         " --readFilesIn $leftmate $rightmate --readFilesCommand zcat \\\n" + 
         " --outFileNamePrefix $sample_name. \\\n" +
@@ -120,12 +117,9 @@ public class RNASeq implements WorkflowDefn {
         " --outSAMmode Full --outSAMattributes All \\\n" +
         " --outSAMattrRGline ID:${sample_name} PL:illumina LB:${sample_name} SM:${sample_name} \\\n" + 
         " --outSAMtype BAM SortedByCoordinate \\\n" +
-        " --limitBAMsortRAM 55000000000 --quantMode GeneCounts --outTmpDir /mnt/data/temp \\\n" +
+        " --limitBAMsortRAM 45000000000 --quantMode GeneCounts --outTmpDir $PWD/temp \\\n" +
         " && mv ${sample_name}.Aligned.sortedByCoord.out.bam ${sorted_bam} \\\n" +
         " && mv ${sample_name}.ReadsPerGene.out.tab ${gene_counts} \\\n" +
-        //" && mv ${sample_name}.Chimeric.out.junction ${chi_junc} \\\n" +
-        //" && mv ${sample_name}.Chimeric.out.sam ${chi_sam} \\\n" +
-        //" && mv ${sample_name}.junctions.bed ${junc_bed} \\\n" +
         " && mv ${sample_name}.Log.final.out ${log_final} \\\n" +
         " && mv ${sample_name}.Log.out ${log_full} \\\n" +
         " && mv ${sample_name}.Log.progress.out ${log_progress} \\\n" +
@@ -199,6 +193,29 @@ public class RNASeq implements WorkflowDefn {
       )
       .build();
 
+  static Task PCA = TaskBuilder.named("PCA")
+      .inputArray("metadata", "\n", "${metadata}")
+      .inputFile("rpkm_file", "${FilterCuff.out_matrix}")
+      .outputFile("pca_out_pdf", "pca.pdf")
+      .output("pca_out_dir", "pca_images")
+      .diskSize("${agg_sm_disk}")
+      .docker(PCA_IMAGE)
+      .script(
+        "set -euo pipefail\n" +
+        "printf \"${metadata}\" | perl -e 'my $file = \"metasheet.csv\"; open(OFH, \">$file\"); while(my $line = <STDIN>) { print OFH $line; } close OFH;'\n" +
+        "cat metasheet.csv\n" +
+        "mkdir $pca_out_dir\n" +
+        "Rscript /usr/local/bin/scripts/pca_plot.R $rpkm_file metasheet.csv $pca_out_pdf $pca_out_dir "
+      )
+      .build();
+
+  
+  PCA.getDefn().getParam("pca_out_dir").setType(Param.TYPE_FOLDER);
+  
+  static Task Heatmap = TaskBuilder.named("Heatmap")
+      .script("#do nothing")
+      .build();
+
   static WorkflowArgs workflowArgs = ArgsBuilder.of()
       .input("Trimmomatic.sample_name", "${sample_name}")
       .input("STAR.sample_name", "${Trimmomatic.sample_name}")
@@ -223,7 +240,11 @@ public class RNASeq implements WorkflowDefn {
                   Cufflinks,
                   CuffGather,
                   CuffMatrix,
-                  FilterCuff
+                  FilterCuff,
+                  Branch.of(
+                    PCA,
+                    Heatmap
+                  )
                 ),
                 Steps.of(
                   STARGather,
