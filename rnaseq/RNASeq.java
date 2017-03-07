@@ -197,7 +197,7 @@ public class RNASeq implements WorkflowDefn {
       .inputArray("metadata", "\n", "${metadata}")
       .inputFile("rpkm_file", "${FilterCuff.out_matrix}")
       .outputFile("pca_out_pdf", "pca.pdf")
-      .output("pca_out_dir", "pca_images")
+      .outputFolder("pca_out_dir", "pca_images")
       .diskSize("${agg_sm_disk}")
       .docker(PCA_IMAGE)
       .script(
@@ -209,9 +209,6 @@ public class RNASeq implements WorkflowDefn {
       )
       .build();
 
-  
-  PCA.getDefn().getParam("pca_out_dir").setType(Param.TYPE_FOLDER);
-  
   static Task Heatmap = TaskBuilder.named("Heatmap")
       .script("#do nothing")
       .build();
