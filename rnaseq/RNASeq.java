@@ -204,7 +204,7 @@ public class RNASeq implements WorkflowDefn {
         "set -euo pipefail\n" +
         "printf \"${metadata}\" | perl -e 'my $file = \"metasheet.csv\"; open(OFH, \">$file\"); while(my $line = <STDIN>) { print OFH $line; } close OFH;'\n" +
         "cat metasheet.csv\n" +
-        "mkdir $pca_out_dir\n" +
+        "mkdir -p $pca_out_dir\n" +
         "Rscript /usr/local/bin/scripts/pca_plot.R $rpkm_file metasheet.csv $pca_out_pdf $pca_out_dir "
       )
       .build();
