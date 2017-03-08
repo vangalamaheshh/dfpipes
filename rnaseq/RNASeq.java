@@ -197,7 +197,8 @@ public class RNASeq implements WorkflowDefn {
       .inputArray("metadata", "\n", "${metadata}")
       .inputFile("rpkm_file", "${FilterCuff.out_matrix}")
       .outputFile("pca_out_pdf", "pca.pdf")
-      .outputFolder("pca_out_dir", "pca_images")
+      .input("pca_out_dir", "pca_images")
+      .input("gs_bucket", "${gs_bucket}/PCA")
       .diskSize("${agg_sm_disk}")
       .docker(PCA_IMAGE)
       .script(
@@ -205,9 +206,11 @@ public class RNASeq implements WorkflowDefn {
         "printf \"${metadata}\" | perl -e 'my $file = \"metasheet.csv\"; open(OFH, \">$file\"); while(my $line = <STDIN>) { print OFH $line; } close OFH;'\n" +
         "cat metasheet.csv\n" +
         "mkdir -p $pca_out_dir\n" +
-        "Rscript /usr/local/bin/scripts/pca_plot.R $rpkm_file metasheet.csv $pca_out_pdf $pca_out_dir "
+        "Rscript /usr/local/bin/scripts/pca_plot.R $rpkm_file metasheet.csv $pca_out_pdf $pca_out_dir \n" +
+        "gsutil cp -r $pca_out_dir $gs_bucket " 
       )
       .build();
+ 
 
   static Task Heatmap = TaskBuilder.named("Heatmap")
       .script("#do nothing")

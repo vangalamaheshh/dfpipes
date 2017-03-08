@@ -19,6 +19,8 @@ inputs:
     M52,M52,M,2
     M53,M53,M,2
 
+  gs_bucket: gs://testdf
+
   agg_sm_disk: 200
   agg_md_disk: 300
   agg_lg_disk: 400
