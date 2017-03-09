@@ -29,6 +29,7 @@ public class RNASeq implements WorkflowDefn {
   static final String CUFF_IMAGE = "docker.io/mvangala/bioifx_alignment_cufflinks:0.0.1";
   static final String CUFF_MATRIX_IMAGE = STAR_REPORT_IMAGE; 
   static final String PCA_IMAGE = "docker.io/mvangala/bioifx_cluster_pca:0.0.1";
+  static final String HEATMAP_IMAGE = "docker.io/mvangala/bioifx_cluster_heatmap:0.0.1";
 
   static Task Trimmomatic = TaskBuilder.named("Trimmomatic")
       .input("sample_name").scatterBy("sample_name")
@@ -213,7 +214,22 @@ public class RNASeq implements WorkflowDefn {
  
 
   static Task Heatmap = TaskBuilder.named("Heatmap")
-      .script("#do nothing")
+      .inputArray("metadata", "\n", "${metadata}")
+      .inputFile("rpkm_file", "${FilterCuff.out_matrix}")
+      .input("cluster", "${heatmap_cluster}")
+      .input("gs_bucket", "${gs_bucket}/Heatmap")
+      .diskSize("${agg_sm_disk}")
+      .docker(HEATMAP_IMAGE)
+      .script(
+        "set -euo pipefail\n" +
+        "printf \"${metadata}\" | perl -e 'my $file = \"metasheet.csv\"; open(OFH, \">$file\"); while(my $line = <STDIN>) { print OFH $line; } close OFH;'\n" +
+        "cat metasheet.csv\n" +
+        "mkdir -p SS SF\n" +
+        "Rscript /usr/local/bin/scripts/heatmapSF.R $rpkm_file metasheet.csv \"$cluster\" SF \n" +
+        "Rscript /usr/local/bin/scripts/heatmapSS.R $rpkm_file metasheet.csv SS \n" + 
+        "gsutil cp -r SS/* $gs_bucket/SS \n" +
+        "gsutil cp -r SF/* $gs_bucket/SF "
+      )
       .build();
 
   static WorkflowArgs workflowArgs = ArgsBuilder.of()

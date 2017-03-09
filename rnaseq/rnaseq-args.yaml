@@ -19,6 +19,8 @@ inputs:
     M52,M52,M,2
     M53,M53,M,2
 
+  heatmap_cluster: 0,3,4 #0 - heirarchical; 3 - kMeans with 3 etc..
+
   gs_bucket: gs://testdf
 
   agg_sm_disk: 200
