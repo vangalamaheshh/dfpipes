@@ -30,6 +30,7 @@ public class RNASeq implements WorkflowDefn {
   static final String CUFF_MATRIX_IMAGE = STAR_REPORT_IMAGE; 
   static final String PCA_IMAGE = "docker.io/mvangala/bioifx_cluster_pca:0.0.1";
   static final String HEATMAP_IMAGE = "docker.io/mvangala/bioifx_cluster_heatmap:0.0.1";
+  static final String DE_IMAGE = "docker.io/mvangala/bioifx_diff-exp_deseq2:0.0.1";
 
   static Task Trimmomatic = TaskBuilder.named("Trimmomatic")
       .input("sample_name").scatterBy("sample_name")
@@ -232,6 +233,26 @@ public class RNASeq implements WorkflowDefn {
       )
       .build();
 
+  static Task DE = TaskBuilder.named("DE")
+      .inputArray("metadata", "\n", "${metadata}")
+      .inputFile("gene_counts", "${STARReport.gene_csv}")
+      .input("gs_bucket", "${gs_bucket}/DE")
+      .diskSize("${agg_sm_disk}")
+      .docker(DE_IMAGE)
+      .script(
+        "set -euo pipefail\n" +
+        "printf \"${metadata}\" | perl -e 'my $file = \"metasheet.csv\"; open(OFH, \">$file\"); while(my $line = <STDIN>) { print OFH $line; } close OFH;'\n" +
+        "cat metasheet.csv\n" +
+        "mkdir -p $(head -1 metasheet.csv | perl -e 'my $line = <STDIN>; chomp $line; $line =~ s/.+?comp_/comp_/; $line =~ s/,/ /g; print $line;')\n" +
+        "Rscript /usr/local/bin/scripts/DE.R metasheet.csv $gene_counts \n" +
+        "gsutil cp -r comp* $gs_bucket "       
+      )
+      .build();
+
+ static Task PATH = TaskBuilder.named("PATH")
+      .script("#do nothing")
+      .build(); 
+
   static WorkflowArgs workflowArgs = ArgsBuilder.of()
       .input("Trimmomatic.sample_name", "${sample_name}")
       .input("STAR.sample_name", "${Trimmomatic.sample_name}")
@@ -264,7 +285,11 @@ public class RNASeq implements WorkflowDefn {
                 ),
                 Steps.of(
                   STARGather,
-                  STARReport
+                  STARReport,
+                  Branch.of(
+                    DE,
+                    PATH
+                  )
                 )
               )
             )
