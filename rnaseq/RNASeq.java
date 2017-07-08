@@ -34,8 +34,8 @@ public class RNASeq implements WorkflowDefn {
 
   static Task Trimmomatic = TaskBuilder.named("Trimmomatic")
       .input("sample_name").scatterBy("sample_name")
-      .inputFile("leftmate", "gs://testdf/input/rnaseq/${sample_name}_R1.fastq.gz")
-      .inputFile("rightmate", "gs://testdf/input/rnaseq/${sample_name}_R2.fastq.gz")
+      .inputFile("leftmate", "gs://bib_somerandomword/input/rnaseq/fastq/ex/${sample_name}_R1.fastq.gz")
+      .inputFile("rightmate", "gs://bib_somerandomword/input/rnaseq/fastq/ex/${sample_name}_R2.fastq.gz")
       .outputFile("leftmateP", "${sample_name}.left.paired.trim.fastq.gz")
       .outputFile("leftmateU", "${sample_name}.left.unpaired.trim.fastq.gz")
       .outputFile("rightmateP", "${sample_name}.right.paired.trim.fastq.gz")
@@ -75,6 +75,7 @@ public class RNASeq implements WorkflowDefn {
        )
       .build();
 
+/*
   static Task STAR = TaskBuilder.named("STAR")
       .input("sample_name")
       .inputFile("leftmate", "${Trimmomatic.leftmateP}")
@@ -253,10 +254,11 @@ public class RNASeq implements WorkflowDefn {
       .script("#do nothing")
       .build(); 
 
+*/
   static WorkflowArgs workflowArgs = ArgsBuilder.of()
       .input("Trimmomatic.sample_name", "${sample_name}")
-      .input("STAR.sample_name", "${Trimmomatic.sample_name}")
-      .input("Cufflinks.sample_name", "${Trimmomatic.sample_name}")
+//      .input("STAR.sample_name", "${Trimmomatic.sample_name}")
+//      .input("Cufflinks.sample_name", "${Trimmomatic.sample_name}")
       .build();
 
   @Override
@@ -265,7 +267,9 @@ public class RNASeq implements WorkflowDefn {
       .steps(
         Steps.of(
           Trimmomatic,
-          Branch.of(
+          TrimGather,
+          TrimReport
+/*          Branch.of(
             Steps.of(
               TrimGather,
               TrimReport
@@ -294,7 +298,7 @@ public class RNASeq implements WorkflowDefn {
               )
             )
           )
-        )
+*/        )
       )
       .args(workflowArgs).build();
   }
