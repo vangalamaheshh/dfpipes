@@ -1,0 +1,36 @@
+resources:
+  zones:
+  - us-*
+inputs:
+  sample_name: |
+    2A1
+    2A2
+    2L1
+    2L2
+  
+  PE: true
+
+  file_path: |
+    gs://pipelines-api/test-data/giab/2A1/2A1_CGATGT_R1.fastq.gz
+    gs://pipelines-api/test-data/giab/2A2/2A2_TGACCA_R1.fastq.gz
+    gs://pipelines-api/test-data/giab/2L1/2L1_CTTGTA_R1.fastq.gz
+    gs://pipelines-api/test-data/giab/2L2/2L2_GTGAAA_R1.fastq.gz
+
+  gs_out_bucket: gs://pipelines-api/test-data/analysis
+  gs_tmp_bucket: gs://pipelines-api/test-data/staging
+
+  agg_sm_disk: 50
+  agg_md_disk: 100
+  agg_lg_disk: 200
+ 
+  #Fasta files
+  ref_fasta: gs://pipelines-api/ref-files/Homo-sapiens/Broad/b37/fasta/Homo_sapiens_assembly19.fasta
+  ref_dict: gs://pipelines-api/ref-files/Homo-sapiens/Broad/b37/fasta/Homo_sapiens_assembly19.dict
+  ref_fasta_index: gs://pipelines-api/ref-files/Homo-sapiens/Broad/b37/fasta/Homo_sapiens_assembly19.fasta.fai
+  
+  #BWAIndex files
+  ref_amb: gs://pipelines-api/ref-files/Homo-sapiens/Broad/b37/BWAIndex/b37.amb
+  ref_ann: gs://pipelines-api/ref-files/Homo-sapiens/Broad/b37/BWAIndex/b37.ann
+  ref_bwt: gs://pipelines-api/ref-files/Homo-sapiens/Broad/b37/BWAIndex/b37.bwt
+  ref_pac: gs://pipelines-api/ref-files/Homo-sapiens/Broad/b37/BWAIndex/b37.pac
+  ref_sa: gs://pipelines-api/ref-files/Homo-sapiens/Broad/b37/BWAIndex/b37.sa
