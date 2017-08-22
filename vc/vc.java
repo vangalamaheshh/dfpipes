@@ -30,7 +30,7 @@ public class vc implements WorkflowDefn {
   
   @Override
   public Workflow createWorkflow(String[] args) throws IOException {
-    return TaskBuilder.named(RNASeq.class.getSimpleName())
+    return TaskBuilder.named(vc.class.getSimpleName())
       .steps(
         Steps.of(
           BwaMem
@@ -42,10 +42,10 @@ public class vc implements WorkflowDefn {
   static Task BwaMem = TaskBuilder.named("BwaMem")
 	  .input("sample_name").scatterBy("sample_name")
 	  .inputFile("left_mate")
-	  .inputFile("rightmate")
+	  .inputFile("right_mate")
 	  .inputFolder("bwa_ref_path", "gs://pipelines-api/ref-files/Homo-sapiens/b37/BWAIndex")
 	  .preemptible(true)
-	  .diskSize("${agg_sm_disk}")
+	  .diskSize(50)
 	  .memory(8)
 	  .cpu(4)
 	  .docker(BWA_IMAGE)
