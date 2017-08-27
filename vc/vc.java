@@ -47,7 +47,7 @@ public class vc implements WorkflowDefn {
     .outputFile("bwa_out_sam", "${BwaMem.sample_name}.sam")
     .preemptible(true)
     .diskSize(50)
-    .memory(16)
+    .memory(14)
     .cpu(4)
     .docker(BWA_IMAGE)
     .script(
