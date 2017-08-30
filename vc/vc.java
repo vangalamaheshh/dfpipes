@@ -70,10 +70,11 @@ public class vc implements WorkflowDefn {
     .cpu(4)
     .docker(SAM_IMAGE)
     .script(
-      "set -o pipefail\n" +
-      "samtools view -bS ${in_sam} 1>${sample_name}.bam\n" +
-      "samtools sort --threads 4 -o ${out_sorted_bam} ${sample_name}.bam\n" +
+      "set -o pipefail \n" +
+      "samtools view -bS -@ 4 ${in_sam} 1>${sample_name}.bam \n" +
+      "samtools sort -@ 4 -m 3G -f ${sample_name}.bam ${out_sorted_bam} \n" +
       "samtools index ${out_sorted_bam}"
     )
     .build();
+
 }
