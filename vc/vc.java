@@ -23,6 +23,7 @@ import com.google.cloud.genomics.dockerflow.task.TaskDefn.Param;
 
 public class vc implements WorkflowDefn {
   static final String BWA_IMAGE = "docker.io/mvangala/bioifx_alignment_bwa:latest";
+  static final String SAM_IMAGE = "docker.io/mvangala/bioifx_format_samtools:latest";
   
   static WorkflowArgs workflowArgs = ArgsBuilder.of()
     .input("BwaMem.sample_name", "${sample_name}")
@@ -33,7 +34,8 @@ public class vc implements WorkflowDefn {
     return TaskBuilder.named(vc.class.getSimpleName())
       .steps(
         Steps.of(
-          BwaMem
+          BwaMem,
+          Sam2SortedBam
           )
         )
       .args(workflowArgs).build();
@@ -46,7 +48,7 @@ public class vc implements WorkflowDefn {
     .inputFolder("bwa_ref_path", "gs://pipelines-api/ref-files/Homo-sapiens/b37/BWAIndex")
     .outputFile("bwa_out_sam", "${BwaMem.sample_name}.sam")
     .preemptible(true)
-    .diskSize(50)
+    .diskSize(100)
     .memory(14)
     .cpu(4)
     .docker(BWA_IMAGE)
@@ -54,6 +56,24 @@ public class vc implements WorkflowDefn {
       "set -o pipefail\n" +
       "bwa mem -t 4 -R '@RG\\tID:${sample_name}\\tPU:${sample_name}\\tSM:{sample_name}\\tPL:ILLUMINA\\tLB:${sample_name}' \\\n" +
       "${bwa_ref_path}/b37 ${left_mate} ${right_mate} 1>${bwa_out_sam}"
+    )
+    .build();
+
+  static Task Sam2SortedBam = TaskBuilder.named("Sam2SortedBam")
+    .input("sample_name", "${BwaMem.sample_name}")
+    .inputFile("in_sam", "${BwaMem.bwa_out_sam}")
+    .outputFile("out_sorted_bam", "${BwaMem.sample_name}.sorted.bam")
+    .outputFile("out_sorted_bam_index", "${BwaMem.sample_name}.sorted.bam.bai")
+    .preemptible(true)
+    .diskSize(100)
+    .memory(14)   
+    .cpu(4)
+    .docker(SAM_IMAGE)
+    .script(
+      "set -o pipefail\n" +
+      "samtools view -bS ${in_sam} 1>${sample_name}.bam\n" +
+      "samtools sort --threads 4 -o ${out_sorted_bam} ${sample_name}.bam\n" +
+      "samtools index ${out_sorted_bam}"
     )
     .build();
 }
