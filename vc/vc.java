@@ -24,6 +24,8 @@ import com.google.cloud.genomics.dockerflow.task.TaskDefn.Param;
 public class vc implements WorkflowDefn {
   static final String BWA_IMAGE = "docker.io/mvangala/bioifx_alignment_bwa:latest";
   static final String SAM_IMAGE = "docker.io/mvangala/bioifx_format_samtools:latest";
+  static final String PICARD_IMAGE = "docker.io/mvangala/bioifx_preprocess_picard:latest";
+  static final String JAVA8_IMAGE = "docker.io/mvangala/base-java8:latest";
   
   static WorkflowArgs workflowArgs = ArgsBuilder.of()
     .input("BwaMem.sample_name", "${sample_name}")
@@ -35,9 +37,10 @@ public class vc implements WorkflowDefn {
       .steps(
         Steps.of(
           BwaMem,
-          Sam2SortedBam
-          )
+          Sam2SortedBam,
+          MarkDups
         )
+      )
       .args(workflowArgs).build();
   }
   
@@ -76,5 +79,24 @@ public class vc implements WorkflowDefn {
       "samtools index ${out_sorted_bam}"
     )
     .build();
+  
+  static Task MarkDups = TaskBuilder.named("MarkDups")
+    .input("sample_name", "${BwaMem.sample_name}")
+    .inputFile("in_sorted_bam", "${Sam2SortedBam.out_sorted_bam}")
+    .outputFile("dedup_bam", "${BwaMem.sample_name}.dedup.bam")
+    .outputFile("dedup_bam_index", "${BwaMem.sample_name}.dedup.bai")
+    .outputFile("metrics_file", "${BwaMem.sample_name}.metrics.txt")
+    .preemptible(true)
+    .diskSize(100)
+    .memory(12)
+    .cpu(2)
+    .docker(PICARD_IMAGE)
+    .script(
+      "set -o pipefail \n" +
+      "picard-tools MarkDuplicates I=${in_sorted_bam} O=${dedup_bam} METRICS_FILE=${metrics_file} \n" +
+      "picard-tools BuildBamIndex INPUT=${dedup_bam} "
+    )
+    .build();
 
+  static Task   
 }
