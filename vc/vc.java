@@ -38,7 +38,9 @@ public class vc implements WorkflowDefn {
         Steps.of(
           BwaMem,
           Sam2SortedBam,
-          MarkDups
+          MarkDups,
+          BQSR,
+          HaplotypeCaller
         )
       )
       .args(workflowArgs).build();
@@ -98,5 +100,59 @@ public class vc implements WorkflowDefn {
     )
     .build();
 
-  static Task   
+  static Task BQSR = TaskBuilder.named("BQSR")
+    .input("sample_name", "${BwaMem.sample_name}")
+    .inputFile("gatk_jar", "gs://pipelines-api/software/gatk/GenomeAnalysisTK.jar")
+    .inputFile("ref_fa", "gs://pipelines-api/ref-files/Homo-sapiens/b37/fasta/Homo_sapiens_assembly19.fasta")
+    .inputFile("ref_fa_idx", "gs://pipelines-api/ref-files/Homo-sapiens/b37/fasta/Homo_sapiens_assembly19.fasta.fai")
+    .inputFile("ref_fa_dict", "gs://pipelines-api/ref-files/Homo-sapiens/b37/fasta/Homo_sapiens_assembly19.dict")
+    .inputFile("dbSNP", "gs://pipelines-api/ref-files/Homo-sapiens/b37/dbsnp_138.b37.vcf.gz")
+    .inputFile("dbSNP_idx", "gs://pipelines-api/ref-files/Homo-sapiens/b37/dbsnp_138.b37.vcf.ids.gz")
+    .inputFile("dedup_bam", "${MarkDups.dedup_bam}")
+    .inputFile("dedup_bam_idx", "${MarkDups.dedup_bam_index}")
+    .outputFile("recal_data", "${BwaMem.sample_name}.recal_data.table")
+    .outputFile("post_recal_data", "${BwaMem.sample_name}.post_recal_data.table")
+    .outputFile("bqsr_bam", "${BwaMem.sample_name}.recal_reads.bam")
+    .preemptible(true)
+    .diskSize(200)
+    .memory(14)
+    .cpu(4)
+    .docker(JAVA8_IMAGE)
+    .script(
+      "set -o pipefail \n" +
+      "gunzip ${dbSNP} \n" +
+      "gunzip ${dbSNP_idx} \n" +
+      "java -jar ${gatk_jar} -T BaseRecalibrator -R ${ref_fa} -I ${dedup_bam} \\\n" +
+      "-knownSites dbsnp_138.b37.vcf -o ${recal_data} -nct 4 \n" +
+      "java -jar ${gatk_jar} -T BaseRecalibrator -R ${ref_fa} -I ${dedup_bam} \\\n" +
+      "-knownSites dbsnp_138.b37.vcf -BQSR ${recal_data} -o ${post_recal_data} -nct 4 \n" +
+      "java -jar ${gatk_jar} -T PrintReads -R ${ref_fa} -I ${dedup_bam} \\\n" +
+      "-BQSR ${recal_data} -o ${bqsr_bam} -nct 4 "   
+    )
+    .build();
+
+  static Task HaplotypeCaller = TaskBuilder.named("HaplotypeCaller")
+    .input("sample_name", "${BwaMem.sample_name}")
+    .inputFile("gatk_jar", "gs://pipelines-api/software/gatk/GenomeAnalysisTK.jar")
+    .inputFile("ref_fa", "gs://pipelines-api/ref-files/Homo-sapiens/b37/fasta/Homo_sapiens_assembly19.fasta")
+    .inputFile("ref_fa_idx", "gs://pipelines-api/ref-files/Homo-sapiens/b37/fasta/Homo_sapiens_assembly19.fasta.fai")
+    .inputFile("ref_fa_dict", "gs://pipelines-api/ref-files/Homo-sapiens/b37/fasta/Homo_sapiens_assembly19.dict")
+    .inputFile("dbSNP", "gs://pipelines-api/ref-files/Homo-sapiens/b37/dbsnp_138.b37.vcf.gz")
+    .inputFile("dbSNP_idx", "gs://pipelines-api/ref-files/Homo-sapiens/b37/dbsnp_138.b37.vcf.ids.gz")
+    .inputFile("bqsr_bam", "${BQSR.bqsr_bam}")
+    .outputFile("out_vcf", "${BwaMem.sample_name}.raw.snp_and_indel.vcf.gz")
+    .preemptible(true)
+    .diskSize(200)
+    .memory(14)
+    .cpu(4)
+    .docker(JAVA8_IMAGE)
+    .script(
+      "set -o pipefail \n" +
+      "gunzip ${dbSNP} \n" +
+      "gunzip ${dbSNP_idx} \n" +
+      "java -jar ${gatk_jar} -T HaplotypeCaller -R ${ref_fa} -I ${bqsr_bam} \\\n" +
+      "--dbsnp dbsnp_138.b37.vcf -o ${sample_name}.raw.snp_and_indel.vcf -nct 4 \n" +
+      "gzip ${sample_name}.raw.snp_and_indel.vcf "
+    )
+    .build();  
 }
