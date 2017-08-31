@@ -106,8 +106,8 @@ public class vc implements WorkflowDefn {
     .inputFile("ref_fa", "gs://pipelines-api/ref-files/Homo-sapiens/b37/fasta/Homo_sapiens_assembly19.fasta")
     .inputFile("ref_fa_idx", "gs://pipelines-api/ref-files/Homo-sapiens/b37/fasta/Homo_sapiens_assembly19.fasta.fai")
     .inputFile("ref_fa_dict", "gs://pipelines-api/ref-files/Homo-sapiens/b37/fasta/Homo_sapiens_assembly19.dict")
-    .inputFile("dbSNP", "gs://pipelines-api/ref-files/Homo-sapiens/b37/dbSNP/dbsnp_138.b37.vcf.gz")
-    .inputFile("dbSNP_idx", "gs://pipelines-api/ref-files/Homo-sapiens/b37/dbSNP/dbsnp_138.b37.vcf.idx.gz")
+    .inputFile("dbSNP", "gs://pipelines-api/ref-files/Homo-sapiens/b37/dbSNP/dbsnp_138.b37.vcf")
+    .inputFile("dbSNP_idx", "gs://pipelines-api/ref-files/Homo-sapiens/b37/dbSNP/dbsnp_138.b37.vcf.idx")
     .inputFile("dedup_bam", "${MarkDups.dedup_bam}")
     .inputFile("dedup_bam_idx", "${MarkDups.dedup_bam_index}")
     .outputFile("recal_data", "${BwaMem.sample_name}.recal_data.table")
@@ -120,12 +120,10 @@ public class vc implements WorkflowDefn {
     .docker(JAVA8_IMAGE)
     .script(
       "set -o pipefail \n" +
-      "gunzip ${dbSNP} \n" +
-      "gunzip ${dbSNP_idx} \n" +
       "java -jar ${gatk_jar} -T BaseRecalibrator -R ${ref_fa} -I ${dedup_bam} \\\n" +
-      "-knownSites dbsnp_138.b37.vcf -o ${recal_data} -nct 4 \n" +
+      "-knownSites ${dbSNP} -o ${recal_data} -nct 4 \n" +
       "java -jar ${gatk_jar} -T BaseRecalibrator -R ${ref_fa} -I ${dedup_bam} \\\n" +
-      "-knownSites dbsnp_138.b37.vcf -BQSR ${recal_data} -o ${post_recal_data} -nct 4 \n" +
+      "-knownSites ${dbSNP} -BQSR ${recal_data} -o ${post_recal_data} -nct 4 \n" +
       "java -jar ${gatk_jar} -T PrintReads -R ${ref_fa} -I ${dedup_bam} \\\n" +
       "-BQSR ${recal_data} -o ${bqsr_bam} -nct 4 "   
     )
@@ -137,12 +135,12 @@ public class vc implements WorkflowDefn {
     .inputFile("ref_fa", "gs://pipelines-api/ref-files/Homo-sapiens/b37/fasta/Homo_sapiens_assembly19.fasta")
     .inputFile("ref_fa_idx", "gs://pipelines-api/ref-files/Homo-sapiens/b37/fasta/Homo_sapiens_assembly19.fasta.fai")
     .inputFile("ref_fa_dict", "gs://pipelines-api/ref-files/Homo-sapiens/b37/fasta/Homo_sapiens_assembly19.dict")
-    .inputFile("dbSNP", "gs://pipelines-api/ref-files/Homo-sapiens/b37/dbSNP/dbsnp_138.b37.vcf.gz")
-    .inputFile("dbSNP_idx", "gs://pipelines-api/ref-files/Homo-sapiens/b37/dbSNP/dbsnp_138.b37.vcf.idx.gz")
+    .inputFile("dbSNP", "gs://pipelines-api/ref-files/Homo-sapiens/b37/dbSNP/dbsnp_138.b37.vcf")
+    .inputFile("dbSNP_idx", "gs://pipelines-api/ref-files/Homo-sapiens/b37/dbSNP/dbsnp_138.b37.vcf.idx")
     .inputFile("bqsr_bam", "${BQSR.bqsr_bam}")
-    .outputFile("out_vcf", "${BwaMem.sample_name}.raw.snp_and_indel.vcf.gz")
-    .outputFile("out_vcf_snp", "${BwaMem.sample_name}.raw.snps.vcf.gz")
-    .outputFile("out_vcf_snp_filtered", "${BwaMem.sample_name}.filtered.snps.vcf.gz")
+    .outputFile("out_vcf", "${BwaMem.sample_name}.raw.snp_and_indel.vcf")
+    .outputFile("out_vcf_snp", "${BwaMem.sample_name}.raw.snps.vcf")
+    .outputFile("out_vcf_snp_filtered", "${BwaMem.sample_name}.filtered.snps.vcf")
     .preemptible(true)
     .diskSize(200)
     .memory(14)
@@ -150,17 +148,12 @@ public class vc implements WorkflowDefn {
     .docker(JAVA8_IMAGE)
     .script(
       "set -o pipefail \n" +
-      "gunzip ${dbSNP} \n" +
-      "gunzip ${dbSNP_idx} \n" +
       "java -jar ${gatk_jar} -T HaplotypeCaller -R ${ref_fa} -I ${bqsr_bam} \\\n" +
-      "--dbsnp dbsnp_138.b37.vcf -o ${sample_name}.raw.snp_and_indel.vcf -nct 4 \n" +
-      "java -jar ${gatk_jar} -T SelectVariants -R ${ref_fa} -V ${sample_name}.raw.snp_and_indel.vcf \\\n" +
-      "-selectType SNP -o ${sample_name}.raw.snps.vcf -nt 4 \n" +
-      "java -jar ${gatk_jar} -T VariantFiltration -R ${ref_fa} --variant ${sample_name}.raw.snps.vcf \\\n" +
-      "-o ${sample_name}.filtered.snps.vcf -nt 4 --filterExpression 'QD < 2.0 || FS > 60.0 || MQ < 40.0 || MQRankSum < -12.5 || ReadPosRankSum < -8.0' --filterName 'synergist-default-snp-filter' \n" +
-      "gzip ${sample_name}.raw.snp_and_indel.vcf \n" +
-      "gzip ${sample_name}.raw.snps.vcf \n" +
-      "gzip ${sample_name}.filtered.snps.vcf "
+      "--dbsnp ${dbSNP} -o ${out_vcf} -nct 4 \n" +
+      "java -jar ${gatk_jar} -T SelectVariants -R ${ref_fa} -V ${out_vcf} \\\n" +
+      "-selectType SNP -o ${out_vcf_snp} -nt 4 \n" +
+      "java -jar ${gatk_jar} -T VariantFiltration -R ${ref_fa} --variant ${out_vcf_snp} \\\n" +
+      "-o ${out_vcf_snp_filtered} -nt 4 --filterExpression 'QD < 2.0 || FS > 60.0 || MQ < 40.0 || MQRankSum < -12.5 || ReadPosRankSum < -8.0' --filterName 'synergist-default-snp-filter' \n"
     )
     .build();
 
