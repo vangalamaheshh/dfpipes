@@ -141,6 +141,8 @@ public class vc implements WorkflowDefn {
     .inputFile("dbSNP_idx", "gs://pipelines-api/ref-files/Homo-sapiens/b37/dbsnp_138.b37.vcf.ids.gz")
     .inputFile("bqsr_bam", "${BQSR.bqsr_bam}")
     .outputFile("out_vcf", "${BwaMem.sample_name}.raw.snp_and_indel.vcf.gz")
+    .outputFile("out_vcf_snp", "${BwaMem.sample_name}.raw.snps.vcf.gz")
+    .outputFile("out_vcf_snp_filtered", "${BwaMem.sample_name}.filtered.snps.vcf.gz")
     .preemptible(true)
     .diskSize(200)
     .memory(14)
@@ -152,7 +154,14 @@ public class vc implements WorkflowDefn {
       "gunzip ${dbSNP_idx} \n" +
       "java -jar ${gatk_jar} -T HaplotypeCaller -R ${ref_fa} -I ${bqsr_bam} \\\n" +
       "--dbsnp dbsnp_138.b37.vcf -o ${sample_name}.raw.snp_and_indel.vcf -nct 4 \n" +
-      "gzip ${sample_name}.raw.snp_and_indel.vcf "
+      "java -jar ${gatk_jar} -T SelectVariants -R ${ref_fa} -V ${sample_name}.raw.snp_and_indel.vcf \\\n" +
+      "-selectType SNP -o ${sample_name}.raw.snps.vcf -nt 4 \n" +
+      "java -jar ${gatk_jar} -T VariantFiltration -R ${ref_fa} --variant ${sample_name}.raw.snps.vcf \\\n" +
+      "-o ${sample_name}.filtered.snps.vcf -nt 4 --filterExpression 'QD < 2.0 || FS > 60.0 || MQ < 40.0 || MQRankSum < -12.5 || ReadPosRankSum < -8.0' --filterName 'synergist-default-snp-filter' \n" +
+      "gzip ${sample_name}.raw.snp_and_indel.vcf \n" +
+      "gzip ${sample_name}.raw.snps.vcf \n" +
+      "gzip ${sample_name}.filtered.snps.vcf "
     )
-    .build();  
+    .build();
+
 }
