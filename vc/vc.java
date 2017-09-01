@@ -142,7 +142,6 @@ public class vc implements WorkflowDefn {
     .inputFile("bqsr_bam_idx", "${BQSR.bqsr_bam_idx}")
     .outputFile("out_vcf", "${BwaMem.sample_name}.raw.snp_and_indel.vcf")
     .outputFile("out_vcf_snp", "${BwaMem.sample_name}.raw.snps.vcf")
-    .outputFile("out_vcf_snp_filtered", "${BwaMem.sample_name}.filtered.snps.vcf")
     .preemptible(true)
     .diskSize(200)
     .memory(14)
@@ -153,10 +152,7 @@ public class vc implements WorkflowDefn {
       "java -jar ${gatk_jar} -T HaplotypeCaller -R ${ref_fa} -I ${bqsr_bam} \\\n" +
       "--dbsnp ${dbSNP} -o ${out_vcf} -nct 4 \n" +
       "java -jar ${gatk_jar} -T SelectVariants -R ${ref_fa} -V ${out_vcf} \\\n" +
-      "-selectType SNP -o ${out_vcf_snp} -nt 4 \n" +
-      "java -jar ${gatk_jar} -T VariantFiltration -R ${ref_fa} --variant ${out_vcf_snp} \\\n" +
-      "-o ${out_vcf_snp_filtered} -nt 4 --filterExpression 'QD < 2.0 || FS > 60.0 || MQ < 40.0' \\\n" +
-      " --filterName 'synergist-default-snp-filter' \n"
+      "-selectType SNP -o ${out_vcf_snp} -nt 4 "
     )
     .build();
 
