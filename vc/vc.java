@@ -25,7 +25,6 @@ public class vc implements WorkflowDefn {
   static final String BWA_IMAGE = "docker.io/mvangala/bioifx_alignment_bwa:latest";
   static final String SAM_IMAGE = "docker.io/mvangala/bioifx_format_samtools:latest";
   static final String PICARD_IMAGE = "docker.io/mvangala/bioifx_preprocess_picard:latest";
-  static final String JAVA8_IMAGE = "docker.io/mvangala/base-java8:latest";
   
   static WorkflowArgs workflowArgs = ArgsBuilder.of()
     .input("BwaMem.sample_name", "${sample_name}")
@@ -59,7 +58,7 @@ public class vc implements WorkflowDefn {
     .docker(BWA_IMAGE)
     .script(
       "set -o pipefail\n" +
-      "bwa mem -t 4 -R '@RG\\tID:${sample_name}\\tPU:${sample_name}\\tSM:{sample_name}\\tPL:ILLUMINA\\tLB:${sample_name}' \\\n" +
+      "bwa mem -t 4 -R \"@RG\\tID:${sample_name}\\tPU:${sample_name}\\tSM:{sample_name}\\tPL:ILLUMINA\\tLB:${sample_name}\" \\\n" +
       "${bwa_ref_path}/b37 ${left_mate} ${right_mate} 1>${bwa_out_sam}"
     )
     .build();
@@ -113,11 +112,12 @@ public class vc implements WorkflowDefn {
     .outputFile("recal_data", "${BwaMem.sample_name}.recal_data.table")
     .outputFile("post_recal_data", "${BwaMem.sample_name}.post_recal_data.table")
     .outputFile("bqsr_bam", "${BwaMem.sample_name}.recal_reads.bam")
+    .outputFile("bqsr_bam_idx", "${BwaMem.sample_name}.recal_reads.bai")
     .preemptible(true)
     .diskSize(200)
     .memory(14)
     .cpu(4)
-    .docker(JAVA8_IMAGE)
+    .docker(PICARD_IMAGE)
     .script(
       "set -o pipefail \n" +
       "java -jar ${gatk_jar} -T BaseRecalibrator -R ${ref_fa} -I ${dedup_bam} \\\n" +
@@ -125,7 +125,8 @@ public class vc implements WorkflowDefn {
       "java -jar ${gatk_jar} -T BaseRecalibrator -R ${ref_fa} -I ${dedup_bam} \\\n" +
       "-knownSites ${dbSNP} -BQSR ${recal_data} -o ${post_recal_data} -nct 4 \n" +
       "java -jar ${gatk_jar} -T PrintReads -R ${ref_fa} -I ${dedup_bam} \\\n" +
-      "-BQSR ${recal_data} -o ${bqsr_bam} -nct 4 "   
+      "-BQSR ${recal_data} -o ${bqsr_bam} -nct 4 \n" +
+      "picard-tools BuildBamIndex INPUT=${bqsr_bam} "   
     )
     .build();
 
@@ -138,6 +139,7 @@ public class vc implements WorkflowDefn {
     .inputFile("dbSNP", "gs://pipelines-api/ref-files/Homo-sapiens/b37/dbSNP/dbsnp_138.b37.vcf")
     .inputFile("dbSNP_idx", "gs://pipelines-api/ref-files/Homo-sapiens/b37/dbSNP/dbsnp_138.b37.vcf.idx")
     .inputFile("bqsr_bam", "${BQSR.bqsr_bam}")
+    .inputFile("bqsr_bam_idx", "${BQSR.bqsr_bam_idx}")
     .outputFile("out_vcf", "${BwaMem.sample_name}.raw.snp_and_indel.vcf")
     .outputFile("out_vcf_snp", "${BwaMem.sample_name}.raw.snps.vcf")
     .outputFile("out_vcf_snp_filtered", "${BwaMem.sample_name}.filtered.snps.vcf")
@@ -145,7 +147,7 @@ public class vc implements WorkflowDefn {
     .diskSize(200)
     .memory(14)
     .cpu(4)
-    .docker(JAVA8_IMAGE)
+    .docker(PICARD_IMAGE)
     .script(
       "set -o pipefail \n" +
       "java -jar ${gatk_jar} -T HaplotypeCaller -R ${ref_fa} -I ${bqsr_bam} \\\n" +
