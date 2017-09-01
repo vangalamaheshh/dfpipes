@@ -155,7 +155,8 @@ public class vc implements WorkflowDefn {
       "java -jar ${gatk_jar} -T SelectVariants -R ${ref_fa} -V ${out_vcf} \\\n" +
       "-selectType SNP -o ${out_vcf_snp} -nt 4 \n" +
       "java -jar ${gatk_jar} -T VariantFiltration -R ${ref_fa} --variant ${out_vcf_snp} \\\n" +
-      "-o ${out_vcf_snp_filtered} -nt 4 --filterExpression 'QD < 2.0 || FS > 60.0 || MQ < 40.0 || MQRankSum < -12.5 || ReadPosRankSum < -8.0' --filterName 'synergist-default-snp-filter' \n"
+      "-o ${out_vcf_snp_filtered} -nt 4 --filterExpression 'QD < 2.0 || FS > 60.0 || MQ < 40.0' \\\n" +
+      " --filterName 'synergist-default-snp-filter' \n"
     )
     .build();
 
