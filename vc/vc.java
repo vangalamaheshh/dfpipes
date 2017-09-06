@@ -70,14 +70,14 @@ public class vc implements WorkflowDefn {
     .outputFile("out_sorted_bam_index", "${BwaMem.sample_name}.sorted.bam.bai")
     .preemptible(true)
     .diskSize(200)
-    .memory(12)   
-    .cpu(2)
+    .memory(14)   
+    .cpu(4)
     .docker(SAM_IMAGE)
     .script(
       "set -o pipefail \n" +
-      "samtools view -bS -@ 2 ${in_sam} 1>${sample_name}.bam \n" +
-      "samtools sort -@ 2 -m 6G -f ${sample_name}.bam ${out_sorted_bam} \n" +
-      "samtools index ${out_sorted_bam}"
+      "samtools view -bS -@ 4 ${in_sam} 1>${sample_name}.bam \n" +
+      "samtools sort -@ 4 -m 3G -o ${out_sorted_bam} -T ${sample_name} ${sample_name}.bam \n" +
+      "samtools index ${out_sorted_bam} "
     )
     .build();
   
