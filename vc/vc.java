@@ -25,9 +25,11 @@ public class vc implements WorkflowDefn {
   static final String BWA_IMAGE = "docker.io/mvangala/bioifx_alignment_bwa:latest";
   static final String SAM_IMAGE = "docker.io/mvangala/bioifx_format_samtools:latest";
   static final String PICARD_IMAGE = "docker.io/mvangala/bioifx_preprocess_picard:latest";
+  static final String GCLOUD_IMAGE = "docker.io/mvangala/bioifx_postprocess_vc:latest";
   
   static WorkflowArgs workflowArgs = ArgsBuilder.of()
     .input("BwaMem.sample_name", "${sample_name}")
+    .input("BwaMem.project_id", "${project_id}")
     .build();
   
   @Override
@@ -39,7 +41,8 @@ public class vc implements WorkflowDefn {
           Sam2SortedBam,
           MarkDups,
           BQSR,
-          HaplotypeCaller
+          HaplotypeCaller,
+          LoadVariants2BQ
         )
       )
       .args(workflowArgs).build();
@@ -156,4 +159,20 @@ public class vc implements WorkflowDefn {
     )
     .build();
 
+  static Task LoadVariants2BQ = TaskBuilder.named("LoadVariants2BQ")
+    .input("sample_name", "${BwaMem.sample_name}")
+    .input("project_id", "${BwaMem.project_id}")
+    .input("vcf_file", "${HaplotypeCaller.out_vcf_snp}")
+    .inputFile("gmx_file", "gs://pipelines-api/keys/gmx.json")
+    .outputFile("out_file", "${bwaMem.sample_name}.load_variants.done")
+    .preemptible(true)
+    .memory(0.5)
+    .cpu(1)
+    .docker(GCLOUD_IMAGE)
+    .script(
+      "set -o pipefail \n" +
+      "sample_name=${sample_name} project_id=${project_id} vcf_file=${vcf_file} \\\n" +
+      "gmx_file=${gmx_file} out_file=${out_file} \\\n" +
+      "bash /load_variants.bash "     
+    ).build();
 }
