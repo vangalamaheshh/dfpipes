@@ -168,6 +168,7 @@ public class vc implements WorkflowDefn {
     .inputFile("gmx_file", "gs://pipelines-api/keys/gmx.json")
     .outputFile("out_file", "${BwaMem.sample_name}.load_variants.done")
     .preemptible(true)
+    .diskSize(1)
     .memory("0.5")
     .cpu(1)
     .docker(GCLOUD_IMAGE)
