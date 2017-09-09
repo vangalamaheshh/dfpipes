@@ -50,6 +50,7 @@ public class vc implements WorkflowDefn {
   
   static Task BwaMem = TaskBuilder.named("BwaMem")
     .input("sample_name").scatterBy("sample_name")
+    .input("project_id")
     .inputFile("left_mate")
     .inputFile("right_mate")
     .inputFolder("bwa_ref_path", "gs://pipelines-api/ref-files/Homo-sapiens/b37/BWAIndex")
