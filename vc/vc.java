@@ -61,6 +61,7 @@ public class vc implements WorkflowDefn {
     .docker(BWA_IMAGE)
     .script(
       "set -o pipefail\n" +
+      "sample_name=${sample_name}\n" +
       "bwa mem -t 4 -R \"@RG\\tID:${sample_name}\\tPU:${sample_name}\\tSM:{sample_name}\\tPL:ILLUMINA\\tLB:${sample_name}\" \\\n" +
       "${bwa_ref_path}/b37 ${left_mate} ${right_mate} 1>${bwa_out_sam}"
     )
@@ -166,7 +167,7 @@ public class vc implements WorkflowDefn {
     .inputFile("gmx_file", "gs://pipelines-api/keys/gmx.json")
     .outputFile("out_file", "${bwaMem.sample_name}.load_variants.done")
     .preemptible(true)
-    .memory(0.5)
+    .memory("0.5")
     .cpu(1)
     .docker(GCLOUD_IMAGE)
     .script(
