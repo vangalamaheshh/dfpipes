@@ -29,7 +29,7 @@ public class vc implements WorkflowDefn {
   
   static WorkflowArgs workflowArgs = ArgsBuilder.of()
     .input("BwaMem.sample_name", "${sample_name}")
-    .input("BwaMem.project_id", "${project_id}")
+    .input("LoadVariants2BQ.project_id", "${project_id}")
     .build();
   
   @Override
@@ -42,6 +42,7 @@ public class vc implements WorkflowDefn {
           MarkDups,
           BQSR,
           HaplotypeCaller,
+          GatherVCFs,
           LoadVariants2BQ
         )
       )
@@ -145,8 +146,8 @@ public class vc implements WorkflowDefn {
     .inputFile("dbSNP_idx", "gs://pipelines-api/ref-files/Homo-sapiens/b37/dbSNP/dbsnp_138.b37.vcf.idx")
     .inputFile("bqsr_bam", "${BQSR.bqsr_bam}")
     .inputFile("bqsr_bam_idx", "${BQSR.bqsr_bam_idx}")
-    .outputFile("out_vcf", "${BwaMem.sample_name}.raw.snp_and_indel.vcf")
-    .outputFile("out_vcf_snp", "${BwaMem.sample_name}.raw.snps.vcf")
+    .outputFile("out_vcf", "${BwaMem.sample_name}.vcf")
+    .outputFile("out_vcf_idx", "${BwaMem.sample_name}.vcf.idx")
     .preemptible(true)
     .diskSize(200)
     .memory(14)
@@ -155,18 +156,23 @@ public class vc implements WorkflowDefn {
     .script(
       "set -o pipefail \n" +
       "java -jar ${gatk_jar} -T HaplotypeCaller -R ${ref_fa} -I ${bqsr_bam} \\\n" +
-      "--dbsnp ${dbSNP} -o ${out_vcf} -nct 4 \n" +
-      "java -jar ${gatk_jar} -T SelectVariants -R ${ref_fa} -V ${out_vcf} \\\n" +
-      "-selectType SNP -o ${out_vcf_snp} -nt 4 "
+      "--dbsnp ${dbSNP} -o /mnt/data/${sample_name}.haplotype.vcf -nct 4 \n" +
+      "java -jar ${gatk_jar} -T VariantFiltration --variant /mnt/data/${sample_name}.haplotype.vcf \\\n" +
+      "-o ${out_vcf} --filterExpression 'QD < 2.0 || FS > 60.0 || MQ < 40.0 || MQRankSum < -12.5 || ReadPosRankSum < -8.0' \\\n" + 
+      "--filterName 'synergist-default-snp-filter' -R ${ref_fa} "
     )
     .build();
 
+  static Task GatherVCFs = TaskBuilder.named("GatherVCFs")
+    .input("pipeline_run", "${workflow.index}")
+    .gatherBy("pipeline_run")
+    .build();
+
   static Task LoadVariants2BQ = TaskBuilder.named("LoadVariants2BQ")
-    .input("sample_name", "${BwaMem.sample_name}")
-    .input("project_id", "${BwaMem.project_id}")
-    .input("vcf_file", "${HaplotypeCaller.out_vcf_snp}")
+    .input("project_id", "${LoadVariants2BQ.project_id}")
+    .inputFileArray("vcf_file_list", ",", "${HaplotypeCaller.out_vcf}")
     .inputFile("gmx_file", "gs://pipelines-api/keys/gmx.json")
-    .outputFile("out_file", "${BwaMem.sample_name}.load_variants.done")
+    .outputFile("out_file", "load_variants.done")
     .preemptible(true)
     .diskSize(1)
     .memory("0.5")
@@ -174,7 +180,7 @@ public class vc implements WorkflowDefn {
     .docker(GCLOUD_IMAGE)
     .script(
       "set -o pipefail \n" +
-      "sample_name=${sample_name} project_id=${project_id} vcf_file=${vcf_file} \\\n" +
+      "project_id=${project_id} vcf_file_list=${vcf_file} \\\n" +
       "gmx_file=${gmx_file} out_file=${out_file} \\\n" +
       "bash /load_variants.bash "     
     ).build();
