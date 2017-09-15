@@ -51,7 +51,6 @@ public class vc implements WorkflowDefn {
   
   static Task BwaMem = TaskBuilder.named("BwaMem")
     .input("sample_name").scatterBy("sample_name")
-    .input("project_id")
     .inputFile("left_mate")
     .inputFile("right_mate")
     .inputFolder("bwa_ref_path", "gs://pipelines-api/ref-files/Homo-sapiens/b37/BWAIndex")
@@ -64,7 +63,7 @@ public class vc implements WorkflowDefn {
     .script(
       "set -o pipefail\n" +
       "sample_name=${sample_name}\n" +
-      "bwa mem -t 4 -R \"@RG\\tID:${sample_name}\\tPU:${sample_name}\\tSM:{sample_name}\\tPL:ILLUMINA\\tLB:${sample_name}\" \\\n" +
+      "bwa mem -t 4 -R \"@RG\\tID:${sample_name}\\tPU:${sample_name}\\tSM:${sample_name}\\tPL:ILLUMINA\\tLB:${sample_name}\" \\\n" +
       "${bwa_ref_path}/b37 ${left_mate} ${right_mate} 1>${bwa_out_sam}"
     )
     .build();
