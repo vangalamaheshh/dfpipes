@@ -29,9 +29,8 @@ public class vc implements WorkflowDefn {
   
   static WorkflowArgs workflowArgs = ArgsBuilder.of()
     .input("BwaMem.sample_name", "${sample_name}")
-    .input("BwaMem.left_mate", "${left_mate}")
-    .input("BwaMem.right_mate", "${right_mate}")
-    .input("LoadVariants2BQ.project_id", "${project_id}")
+    .input("input_url", "${input_url}")
+    .input("project_id", "${project_id}")
     .build();
   
   @Override
@@ -52,8 +51,7 @@ public class vc implements WorkflowDefn {
   
   static Task BwaMem = TaskBuilder.named("BwaMem")
     .input("sample_name").scatterBy("sample_name")
-    .inputFile("left_mate")
-    .inputFile("right_mate")
+    .inputFolder("fastq_folder", "${input_url}/${BwaMem.sample_name}")
     .inputFolder("bwa_ref_path", "gs://pipelines-api/ref-files/Homo-sapiens/b37/BWAIndex")
     .outputFile("bwa_out_sam", "${BwaMem.sample_name}.sam")
     .preemptible(true)
@@ -65,7 +63,7 @@ public class vc implements WorkflowDefn {
       "set -o pipefail\n" +
       "sample_name=${sample_name}\n" +
       "bwa mem -t 4 -R \"@RG\\tID:${sample_name}\\tPU:${sample_name}\\tSM:${sample_name}\\tPL:ILLUMINA\\tLB:${sample_name}\" \\\n" +
-      "${bwa_ref_path}/b37 ${left_mate} ${right_mate} 1>${bwa_out_sam}"
+      "${bwa_ref_path}/b37 ${fastq_folder}/*_R1*fastq.gz ${fastq_folder}/*_R2*fastq.gz 1>${bwa_out_sam}"
     )
     .build();
 
@@ -166,7 +164,7 @@ public class vc implements WorkflowDefn {
     .build();
 
   static Task LoadVariants2BQ = TaskBuilder.named("LoadVariants2BQ")
-    .input("project_id", "${LoadVariants2BQ.project_id}")
+    .input("project_id", "${project_id}")
     .inputArray("vcf_file_list", ",", "${HaplotypeCaller.out_vcf}")
     .inputFile("gmx_file", "gs://pipelines-api/keys/gmx.json")
     .outputFile("out_file", "${LoadVariants2BQ.project_id}.load_variants.done")

@@ -1,16 +1,7 @@
 inputs:
-  left_mate: |-
-    gs://pipelines-api/test-data/giab/2A1/2A1_CGATGT_R1.fastq.gz
-    gs://pipelines-api/test-data/giab/2A2/2A2_TGACCA_R1.fastq.gz
-    gs://pipelines-api/test-data/giab/2L1/2L1_CTTGTA_R1.fastq.gz
-    gs://pipelines-api/test-data/giab/2L2/2L2_GTGAAA_R1.fastq.gz
   paired_end: true
   project_id: giab
-  right_mate: |-
-    gs://pipelines-api/test-data/giab/2A1/2A1_CGATGT_R2.fastq.gz
-    gs://pipelines-api/test-data/giab/2A2/2A2_TGACCA_R2.fastq.gz
-    gs://pipelines-api/test-data/giab/2L1/2L1_CTTGTA_R2.fastq.gz
-    gs://pipelines-api/test-data/giab/2L2/2L2_GTGAAA_R2.fastq.gz
+  input_url: gs://pipelines-api/test-data/giab
   sample_name: |-
     2A1
     2A2
