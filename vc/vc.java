@@ -29,6 +29,8 @@ public class vc implements WorkflowDefn {
   
   static WorkflowArgs workflowArgs = ArgsBuilder.of()
     .input("BwaMem.sample_name", "${sample_name}")
+    .input("BwaMem.left_mate", "${left_mate}")
+    .input("BwaMem.right_mate", "${right_mate}")
     .input("LoadVariants2BQ.project_id", "${project_id}")
     .build();
   
@@ -42,7 +44,6 @@ public class vc implements WorkflowDefn {
           MarkDups,
           BQSR,
           HaplotypeCaller,
-          GatherVCFs,
           LoadVariants2BQ
         )
       )
@@ -160,18 +161,15 @@ public class vc implements WorkflowDefn {
       "-o ${out_vcf} --filterExpression 'QD < 2.0 || FS > 60.0 || MQ < 40.0 || MQRankSum < -12.5 || ReadPosRankSum < -8.0' \\\n" + 
       "--filterName 'synergist-default-snp-filter' -R ${ref_fa} "
     )
-    .build();
-
-  static Task GatherVCFs = TaskBuilder.named("GatherVCFs")
     .input("pipeline_run", "${workflow.index}")
     .gatherBy("pipeline_run")
     .build();
 
   static Task LoadVariants2BQ = TaskBuilder.named("LoadVariants2BQ")
     .input("project_id", "${LoadVariants2BQ.project_id}")
-    .inputFileArray("vcf_file_list", ",", "${HaplotypeCaller.out_vcf}")
+    .inputArray("vcf_file_list", ",", "${HaplotypeCaller.out_vcf}")
     .inputFile("gmx_file", "gs://pipelines-api/keys/gmx.json")
-    .outputFile("out_file", "load_variants.done")
+    .outputFile("out_file", "${LoadVariants2BQ.project_id}.load_variants.done")
     .preemptible(true)
     .diskSize(1)
     .memory("0.5")
@@ -179,7 +177,7 @@ public class vc implements WorkflowDefn {
     .docker(GCLOUD_IMAGE)
     .script(
       "set -o pipefail \n" +
-      "project_id=${project_id} vcf_file_list=${vcf_file} \\\n" +
+      "project_id=${project_id} vcf_file_list=${vcf_file_list} \\\n" +
       "gmx_file=${gmx_file} out_file=${out_file} \\\n" +
       "bash /load_variants.bash "     
     ).build();

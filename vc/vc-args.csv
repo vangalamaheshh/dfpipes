@@ -1,3 +1,0 @@
-inputs=sample_name,inputs=BwaMem.left_mate,inputs=BwaMem.right_mate,inputs=project_id
-2A1,gs://pipelines-api/test-data/giab/2A1/2A1_CGATGT_R1.fastq.gz,gs://pipelines-api/test-data/giab/2A1/2A1_CGATGT_R2.fastq.gz,giab
-2A2,gs://pipelines-api/test-data/giab/2A2/2A2_TGACCA_R1.fastq.gz,gs://pipelines-api/test-data/giab/2A2/2A2_TGACCA_R2.fastq.gz,giab
