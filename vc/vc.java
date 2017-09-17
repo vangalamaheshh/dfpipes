@@ -167,7 +167,7 @@ public class vc implements WorkflowDefn {
     .input("project_id", "${project_id}")
     .inputArray("vcf_file_list", ",", "${HaplotypeCaller.out_vcf}")
     .inputFile("gmx_file", "gs://pipelines-api/keys/gmx.json")
-    .outputFile("out_file", "${LoadVariants2BQ.project_id}.load_variants.done")
+    .outputFile("out_file", "${project_id}.load_variants.done")
     .preemptible(true)
     .diskSize(1)
     .memory("0.5")
