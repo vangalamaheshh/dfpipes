@@ -175,7 +175,7 @@ public class vc implements WorkflowDefn {
     .docker(GCLOUD_IMAGE)
     .script(
       "set -o pipefail \n" +
-      "project_id=${project_id} vcf_file_list=${vcf_file_list} \\\n" +
+      "project_id=${project_id} vcf_file_list=\"${vcf_file_list}\" \\\n" +
       "gmx_file=${gmx_file} out_file=${out_file} \\\n" +
       "bash /load_variants.bash "     
     ).build();
