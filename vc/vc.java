@@ -64,7 +64,7 @@ public class vc implements WorkflowDefn {
     .script(
       "set -o pipefail\n" +
       "sample_name=${sample_name}\n" +
-      "if [ ${paired_end} == "true" ]; then \n" +
+      "if [ ${paired_end} == \"true\" ]; then \n" +
         "fastq_files=(${fastq_folder}/*_R1*fastq.gz ${fastq_folder}/*_R2*fastq.gz)\n" +
       "else\n" +
         "fastq_files=(${fastq_folder}/*_R1*fastq.gz)\n" +
