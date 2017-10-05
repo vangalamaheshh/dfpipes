@@ -31,6 +31,7 @@ public class vc implements WorkflowDefn {
     .input("BwaMem.sample_name", "${sample_name}")
     .input("input_url", "${input_url}")
     .input("project_id", "${project_id}")
+    .input("paired_end", "${paired_end}")
     .build();
   
   @Override
@@ -51,6 +52,7 @@ public class vc implements WorkflowDefn {
   
   static Task BwaMem = TaskBuilder.named("BwaMem")
     .input("sample_name").scatterBy("sample_name")
+    .input("paired_end", "${paired_end}")
     .inputFolder("fastq_folder", "${input_url}/${BwaMem.sample_name}")
     .inputFolder("bwa_ref_path", "gs://pipelines-api/ref-files/Homo-sapiens/b37/BWAIndex")
     .outputFile("bwa_out_sam", "${BwaMem.sample_name}.sam")
@@ -62,8 +64,13 @@ public class vc implements WorkflowDefn {
     .script(
       "set -o pipefail\n" +
       "sample_name=${sample_name}\n" +
+      "if [ ${paired_end} == "true" ]; then \n" +
+        "fastq_files=(${fastq_folder}/*_R1*fastq.gz ${fastq_folder}/*_R2*fastq.gz)\n" +
+      "else\n" +
+        "fastq_files=(${fastq_folder}/*_R1*fastq.gz)\n" +
+      "fi\n" +
       "bwa mem -t 4 -R \"@RG\\tID:${sample_name}\\tPU:${sample_name}\\tSM:${sample_name}\\tPL:ILLUMINA\\tLB:${sample_name}\" \\\n" +
-      "${bwa_ref_path}/b37 ${fastq_folder}/*_R1*fastq.gz ${fastq_folder}/*_R2*fastq.gz 1>${bwa_out_sam}"
+      "${bwa_ref_path}/b37 ${fastq_files[*]} 1>${bwa_out_sam}"
     )
     .build();
 
