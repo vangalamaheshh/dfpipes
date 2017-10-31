@@ -87,7 +87,7 @@ public class vc implements WorkflowDefn {
     .script(
       "set -o pipefail \n" +
       "samtools view -bS -@ 4 ${in_sam} 1>${sample_name}.bam \n" +
-      "samtools sort -o ${out_sorted_bam} -T ${sample_name} ${sample_name}.bam \n" +
+      "samtools sort -@ 4 -m 3G -o ${out_sorted_bam} -T ${sample_name} ${sample_name}.bam \n" +
       "samtools index ${out_sorted_bam} "
     )
     .build();
@@ -105,7 +105,8 @@ public class vc implements WorkflowDefn {
     .docker(PICARD_IMAGE)
     .script(
       "set -o pipefail \n" +
-      "picard-tools MarkDuplicates I=${in_sorted_bam} O=${dedup_bam} METRICS_FILE=${metrics_file} \n" +
+      "picard-tools MarkDuplicates I=${in_sorted_bam} O=${dedup_bam} METRICS_FILE=${metrics_file} \\\n" +
+      "TMP_DIR=/mnt/data \n" +
       "picard-tools BuildBamIndex INPUT=${dedup_bam} "
     )
     .build();
