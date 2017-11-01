@@ -30,6 +30,7 @@ public class vc implements WorkflowDefn {
   static WorkflowArgs workflowArgs = ArgsBuilder.of()
     .input("BwaMem.sample_name", "${sample_name}")
     .input("input_url", "${input_url}")
+    .input("workspace", "${workspace}")
     .input("project_id", "${project_id}")
     .input("paired_end", "${paired_end}")
     .build();
@@ -173,7 +174,7 @@ public class vc implements WorkflowDefn {
 
   static Task LoadVariants2BQ = TaskBuilder.named("LoadVariants2BQ")
     .input("project_id", "${project_id}")
-    .inputArray("vcf_file_list", ",", "${HaplotypeCaller.out_vcf}")
+    .input("workspace", "${workspace}/HaplotypeCaller")
     .inputFile("gmx_file", "gs://pipelines-api/keys/gmx.json")
     .outputFile("out_file", "${project_id}.load_variants.done")
     .preemptible(true)
@@ -183,7 +184,7 @@ public class vc implements WorkflowDefn {
     .docker(GCLOUD_IMAGE)
     .script(
       "set -o pipefail \n" +
-      "project_id=${project_id} vcf_file_list=\"${vcf_file_list}\" \\\n" +
+      "project_id=${project_id} workspace=${workspace} \\\n" +
       "gmx_file=${gmx_file} out_file=${out_file} \\\n" +
       "bash /load_variants.bash "     
     ).build();
