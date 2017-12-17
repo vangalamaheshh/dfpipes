@@ -33,6 +33,7 @@ public class vc implements WorkflowDefn {
     .input("workspace", "${workspace}")
     .input("project_id", "${project_id}")
     .input("paired_end", "${paired_end}")
+    .input("bq_dataset_name_gx", "${bq_dataset_name_gx")
     .build();
   
   @Override
@@ -174,6 +175,7 @@ public class vc implements WorkflowDefn {
 
   static Task LoadVariants2BQ = TaskBuilder.named("LoadVariants2BQ")
     .input("project_id", "${project_id}")
+    .input("bq_dataset_name_gx", "${bq_dataset_name_gx}")
     .input("workspace", "${workspace}/HaplotypeCaller")
     .inputFile("gmx_file", "gs://pipelines-api/keys/gmx.json")
     .outputFile("out_file", "${project_id}.load_variants.done")
