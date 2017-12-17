@@ -187,7 +187,7 @@ public class vc implements WorkflowDefn {
     .script(
       "set -o pipefail \n" +
       "project_id=${project_id} workspace=${workspace} \\\n" +
-      "gmx_file=${gmx_file} out_file=${out_file} \\\n" +
+      "gmx_file=${gmx_file} out_file=${out_file} bq_dataset_name_gx=${bq_dataset_name_gx} \\\n" +
       "bash /load_variants.bash "     
     ).build();
 }
